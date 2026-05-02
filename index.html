@@ -182,18 +182,21 @@
     .song-artist{font-size:0.8rem;color:var(--text-muted)}
     .player-row{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:8px}
     .p-btn{
-      background:none;border:none;color:var(--text);font-size:1.3rem;
-      cursor:pointer;padding:6px;transition:color 0.2s;
+      background:none;border:none;color:var(--text);font-size:0;
+      cursor:pointer;padding:8px;transition:color 0.2s;
+      display:flex;align-items:center;justify-content:center;
     }
     .p-btn:hover{color:var(--accent)}
+    .p-btn svg{width:20px;height:20px;fill:currentColor}
     .play-btn{
       width:50px;height:50px;border-radius:50%;
       background:linear-gradient(135deg,var(--accent),var(--accent2));
-      border:none;color:var(--bg);font-size:1.2rem;
+      border:none;color:var(--bg);font-size:0;
       cursor:pointer;box-shadow:0 4px 16px var(--glow);
       display:flex;align-items:center;justify-content:center;
       transition:transform 0.2s;
     }
+    .play-btn svg{width:22px;height:22px;fill:currentColor}
     .play-btn:hover{transform:scale(1.08)}
     .progress{
       width:100%;height:3px;background:rgba(255,255,255,0.1);
@@ -412,9 +415,9 @@
       <div class="song-artist" id="songArtist">Валентин Стрыкало</div>
     </div>
     <div class="player-row">
-      <button class="p-btn" id="prevBtn">⏮</button>
-      <button class="play-btn" id="playBtn">▶</button>
-      <button class="p-btn" id="nextBtn">⏭</button>
+      <button class="p-btn" id="prevBtn"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
+      <button class="play-btn" id="playBtn"><svg viewBox="0 0 24 24" id="playIcon"><path d="M8 5v14l11-7z"/></svg></button>
+      <button class="p-btn" id="nextBtn"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zm10-12v12h2V6z"/></svg></button>
     </div>
     <div class="progress" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
     <div class="track-dots">
@@ -490,7 +493,7 @@
   <canvas id="finaleCanvas"></canvas>
   <div class="page-content finale-wrap">
     <div class="finale-heart">💖</div>
-    <h1>Спасибо, что ты есть,<br>САШУЛЬ</h1>
+    <h1>Спасибо, что ты есть,<br>Кисаня</h1>
     <div class="glass">
       <p class="handwriting" style="font-size:1.35rem">
         Год с тобой пролетел как один день. Ты сделала мою жизнь ярче, теплее и счастливее. Я не умею красиво говорить, но знай — ты для меня всё. Я тебя ЛЮБЛЮ!!! 
@@ -530,7 +533,7 @@ window.goPage = function(n){
   setTimeout(()=>{pages[prev].classList.remove('exit-up','exit-down')},700);
 
   // Triggers
-  if(n===2&&!audioStarted){audio.play().catch(()=>{});audioStarted=true;vinyl.classList.add('spin')}
+  if(n===2&&!audioStarted){audio.play().then(()=>{audioStarted=true;isPlaying=true;vinyl.classList.add('spin');document.getElementById('playIcon').innerHTML='<path d="M6 19h4V5H6zm8-14v14h4V5z"/>'}).catch(()=>{})}
   if(n===2&&audioStarted) vinyl.classList.add('spin');
   if(n!==2) miniPlayer.classList.toggle('show',audioStarted&&isPlaying);
   if(n===4) initQuiz();
@@ -578,21 +581,21 @@ const tracks=[
   {title:'Первомай',artist:'Валентин Стрыкало',src:'assets/pervomay.mp3'}
 ];
 let cTrack=0,isPlaying=false,audioStarted=false;
-const audio=new Audio(tracks[0].src);audio.preload='auto';
+const audio=new Audio(tracks[0].src);audio.preload='auto';audio.setAttribute('playsinline','');audio.setAttribute('webkit-playsinline','');
 const vinyl=document.getElementById('vinyl');
 const playBtn=document.getElementById('playBtn');
 const miniPlayer=document.getElementById('miniPlayer');
 
 function loadT(i){
-  cTrack=i;audio.src=tracks[i].src;
+  cTrack=i;audio.src=tracks[i].src;audio.load();
   document.getElementById('songTitle').textContent=tracks[i].title;
   document.getElementById('songArtist').textContent=tracks[i].artist;
   document.querySelectorAll('.dot').forEach((d,j)=>d.classList.toggle('on',j===i));
   if(isPlaying)audio.play().catch(()=>{});
 }
 function togglePlay(){
-  if(isPlaying){audio.pause();isPlaying=false;playBtn.textContent='▶';vinyl.classList.remove('spin');miniPlayer.textContent='🎵'}
-  else{audio.play().catch(()=>{});isPlaying=true;audioStarted=true;playBtn.textContent='⏸';vinyl.classList.add('spin');miniPlayer.textContent='⏸'}
+  if(isPlaying){audio.pause();isPlaying=false;document.getElementById('playIcon').innerHTML='<path d="M8 5v14l11-7z"/>';vinyl.classList.remove('spin');miniPlayer.textContent='🎵'}
+  else{audio.play().then(()=>{isPlaying=true;audioStarted=true;document.getElementById('playIcon').innerHTML='<path d="M6 19h4V5H6zm8-14v14h4V5z"/>';vinyl.classList.add('spin');miniPlayer.textContent='⏸'}).catch(()=>{})}
 }
 playBtn.addEventListener('click',togglePlay);
 vinyl.addEventListener('click',togglePlay);
@@ -745,7 +748,7 @@ addEventListener('resize',()=>{if(fRunning)resizeFinale()});
 // ===== Restart =====
 window.restart=function(){
   audio.pause();audio.currentTime=0;isPlaying=false;audioStarted=false;
-  playBtn.textContent='▶';vinyl.classList.remove('spin');
+  document.getElementById('playIcon').innerHTML='<path d="M8 5v14l11-7z"/>';vinyl.classList.remove('spin');
   miniPlayer.classList.remove('show');
   drawDone=false;if(drawAF)cancelAnimationFrame(drawAF);
   dx.clearRect(0,0,dc.width,dc.height);
