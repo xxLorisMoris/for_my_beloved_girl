@@ -293,6 +293,58 @@
     }
     .draw-caption.show{opacity:1}
 
+    /* ===== Counter ===== */
+    .counter-grid{
+      display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:16px;
+    }
+    .counter-box{
+      background:var(--card);border:1px solid var(--card-border);
+      border-radius:20px;padding:16px 20px;min-width:80px;text-align:center;
+      backdrop-filter:blur(8px);
+    }
+    .counter-num{
+      font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:700;
+      color:var(--accent);line-height:1;
+    }
+    .counter-label{
+      font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;
+      letter-spacing:1px;margin-top:4px;
+    }
+    .counter-since{
+      font-family:'Caveat',cursive;font-size:1.1rem;color:var(--text-muted);margin-top:12px;
+    }
+
+    /* ===== Timeline ===== */
+    .timeline{
+      position:relative;padding-left:28px;text-align:left;width:100%;max-width:340px;
+    }
+    .timeline::before{
+      content:'';position:absolute;left:8px;top:0;bottom:0;width:2px;
+      background:linear-gradient(to bottom,var(--accent),var(--accent2),var(--accent3));
+      border-radius:1px;
+    }
+    .tl-item{
+      position:relative;margin-bottom:20px;opacity:0;transform:translateX(-16px);
+      transition:all 0.5s ease;
+    }
+    .tl-item.show{opacity:1;transform:translateX(0)}
+    .tl-dot{
+      position:absolute;left:-24px;top:4px;width:12px;height:12px;
+      border-radius:50%;background:var(--accent);
+      box-shadow:0 0 8px var(--glow);border:2px solid var(--bg);
+    }
+    .tl-date{
+      font-size:0.75rem;color:var(--accent);font-weight:600;
+      text-transform:uppercase;letter-spacing:1px;
+    }
+    .tl-text{
+      font-family:'Caveat',cursive;font-size:1.15rem;color:var(--text);
+      line-height:1.4;margin-top:2px;
+    }
+
+    /* ===== Confetti canvas ===== */
+    #confettiCanvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1}
+
     /* ===== Finale ===== */
     #finaleCanvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
     .finale-wrap{position:relative;z-index:2}
@@ -357,8 +409,25 @@
   </div>
 </div>
 
-<!-- PAGE 2: "Я помню о тебе" — Tabs -->
+<!-- PAGE 2: Counter -->
 <div class="page" id="p1">
+  <div class="page-content">
+    <h2>Мы вместе уже... 💖</h2>
+    <div class="divider"></div>
+    <div class="counter-grid">
+      <div class="counter-box"><div class="counter-num" id="cDays">0</div><div class="counter-label">дней</div></div>
+      <div class="counter-box"><div class="counter-num" id="cHours">0</div><div class="counter-label">часов</div></div>
+      <div class="counter-box"><div class="counter-num" id="cMins">0</div><div class="counter-label">минут</div></div>
+      <div class="counter-box"><div class="counter-num" id="cSecs">0</div><div class="counter-label">секунд</div></div>
+    </div>
+    <p class="counter-since">с 17 декабря 2024</p>
+    <p class="subtitle" style="margin-top:12px">...и каждая секунда — счастье 🌸</p>
+    <button class="nav-btn" onclick="goPage(2)">Дальше →</button>
+  </div>
+</div>
+
+<!-- PAGE 3: "Я помню о тебе" — Tabs -->
+<div class="page" id="p2">
   <div class="page-content">
     <h2>Я помню всё о тебе, моя Кисаня ❤️</h2>
     <div class="divider"></div>
@@ -397,12 +466,12 @@
         <div class="tab-value">Трогать волосы при разговоре со мной</div>
       </div>
     </div>
-    <button class="nav-btn" onclick="goPage(2)">Дальше →</button>
+    <button class="nav-btn" onclick="goPage(3)">Дальше →</button>
   </div>
 </div>
 
-<!-- PAGE 3: Music -->
-<div class="page" id="p2">
+<!-- PAGE 4: Music -->
+<div class="page" id="p3">
   <div class="page-content">
     <h2>Я помню, кто твой<br>любимый исполнитель 🎵</h2>
     <div class="divider"></div>
@@ -424,12 +493,28 @@
       <button class="dot on" data-t="0"></button>
       <button class="dot" data-t="1"></button>
     </div>
-    <button class="nav-btn" onclick="goPage(3)" style="margin-top:12px">Дальше →</button>
+    <button class="nav-btn" onclick="goPage(4)" style="margin-top:12px">Дальше →</button>
   </div>
 </div>
 
-<!-- PAGE 4: Tux -->
-<div class="page" id="p3">
+<!-- PAGE 5: Timeline -->
+<div class="page" id="p4">
+  <div class="page-content">
+    <h2>Наша история 💕</h2>
+    <div class="divider"></div>
+    <div class="timeline" id="timeline">
+      <div class="tl-item"><div class="tl-dot"></div><div class="tl-date">17 декабря 2024</div><div class="tl-text">Мы начали встречаться 💖</div></div>
+      <div class="tl-item"><div class="tl-dot"></div><div class="tl-date">Первые дни</div><div class="tl-text">Первые сообщения до утра, бабочки в животе</div></div>
+      <div class="tl-item"><div class="tl-dot"></div><div class="tl-date">Зима 2025</div><div class="tl-text">Наши первые прогулки вместе 🌸</div></div>
+      <div class="tl-item"><div class="tl-dot"></div><div class="tl-date">Каждый день</div><div class="tl-text">Ты стала моим человеком, моим всем ❤️</div></div>
+      <div class="tl-item"><div class="tl-dot"></div><div class="tl-date">Сейчас</div><div class="tl-text">Год вместе! И это только начало...</div></div>
+    </div>
+    <button class="nav-btn" onclick="goPage(5)" style="margin-top:16px">Дальше →</button>
+  </div>
+</div>
+
+<!-- PAGE 6: Tux -->
+<div class="page" id="p5">
   <div class="page-content">
     <h2>Наш талисман, Сашуль 🐧</h2>
     <div class="divider"></div>
@@ -437,12 +522,12 @@
     <div class="glass">
       <p class="handwriting">Этот пингвинчик — как наша любовь: особенный, тёплый и неповторимый. Он напоминает мне о нас каждый раз, когда я его вижу.</p>
     </div>
-    <button class="nav-btn" onclick="goPage(4)">Дальше →</button>
+    <button class="nav-btn" onclick="goPage(6)">Дальше →</button>
   </div>
 </div>
 
-<!-- PAGE 5: Quiz -->
-<div class="page" id="p4">
+<!-- PAGE 7: Quiz -->
+<div class="page" id="p6">
   <div class="page-content">
     <h2>А ты помнишь, Сашенька? 💭</h2>
     <div class="divider"></div>
@@ -453,12 +538,12 @@
       <div class="quiz-result" id="quizResult"></div>
     </div>
     <button class="nav-btn" id="quizNext" style="display:none" onclick="nextQuiz()">Следующий вопрос →</button>
-    <button class="nav-btn" id="quizFinish" style="display:none" onclick="goPage(5)">Продолжить 💖</button>
+    <button class="nav-btn" id="quizFinish" style="display:none" onclick="goPage(7)">Продолжить 💖</button>
   </div>
 </div>
 
-<!-- PAGE 6: Reasons I love you (replaces letter) -->
-<div class="page" id="p5">
+<!-- PAGE 8: Reasons I love you (replaces letter) -->
+<div class="page" id="p7">
   <div class="page-content">
     <h2>Почему я люблю тебя 💖</h2>
     <div class="divider"></div>
@@ -473,23 +558,23 @@
         <div class="reason-item"><div class="reason-num">6</div><div class="reason-text">За то, что ты — мой человек, моя любимая, моё всё</div></div>
       </div>
     </div>
-    <button class="nav-btn" onclick="goPage(6)">Дальше →</button>
+    <button class="nav-btn" onclick="goPage(8)">Дальше →</button>
   </div>
 </div>
 
-<!-- PAGE 7: Drawing -->
-<div class="page" id="p6">
+<!-- PAGE 9: Drawing -->
+<div class="page" id="p8">
   <div class="page-content">
     <h2>Это мы, любимая ❤️</h2>
     <div class="divider"></div>
     <canvas id="drawCanvas" width="280" height="280"></canvas>
     <div class="draw-caption" id="drawCaption">Люблю тебя, моя Киса 💖</div>
-    <button class="nav-btn" onclick="goPage(7)">Дальше →</button>
+    <button class="nav-btn" onclick="goPage(9)">Дальше →</button>
   </div>
 </div>
 
-<!-- PAGE 8: Finale -->
-<div class="page" id="p7" style="position:relative">
+<!-- PAGE 10: Finale -->
+<div class="page" id="p9" style="position:relative">
   <canvas id="finaleCanvas"></canvas>
   <div class="page-content finale-wrap">
     <div class="finale-heart">💖</div>
@@ -516,7 +601,7 @@
 (function(){
 'use strict';
 
-const TOTAL_PAGES = 8;
+const TOTAL_PAGES = 10;
 let cur = 0;
 const pages = Array.from({length:TOTAL_PAGES},(_,i)=>document.getElementById('p'+i));
 
@@ -538,13 +623,15 @@ window.goPage = function(n){
   setTimeout(()=>{pages[prev].classList.remove('exit-up','exit-down')},700);
 
   // Triggers
-  if(n===2&&!audioStarted){/* no autoplay — user must tap Play on iOS */}
-  if(n===2&&audioStarted) vinyl.classList.add('spin');
-  if(n!==2) miniPlayer.classList.toggle('show',audioStarted&&isPlaying);
-  if(n===4) initQuiz();
-  if(n===5) revealReasons();
-  if(n===6) startDrawing();
-  if(n===7){resizeFinale();initFinale();animFinale()}
+  if(n===1) startCounter();
+  if(n===3&&!audioStarted){/* no autoplay — user must tap Play on iOS */}
+  if(n===3&&audioStarted) vinyl.classList.add('spin');
+  if(n!==3) miniPlayer.classList.toggle('show',audioStarted&&isPlaying);
+  if(n===4) revealTimeline();
+  if(n===6) initQuiz();
+  if(n===7) revealReasons();
+  if(n===8) startDrawing();
+  if(n===9){resizeFinale();initFinale();animFinale();startConfetti()}
 };
 
 // ===== Bokeh particles =====
@@ -579,6 +666,60 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     document.querySelector(`.tab-content[data-tab="${btn.dataset.tab}"]`).classList.add('active');
   });
 });
+
+// ===== Counter =====
+const startDate = new Date(2024, 11, 17); // 17 December 2024
+let counterInterval;
+function startCounter(){
+  if(counterInterval) return;
+  function updateCounter(){
+    const now=new Date();
+    const diff=now-startDate;
+    const days=Math.floor(diff/86400000);
+    const hours=Math.floor((diff%86400000)/3600000);
+    const mins=Math.floor((diff%3600000)/60000);
+    const secs=Math.floor((diff%60000)/1000);
+    document.getElementById('cDays').textContent=days;
+    document.getElementById('cHours').textContent=hours;
+    document.getElementById('cMins').textContent=mins;
+    document.getElementById('cSecs').textContent=secs;
+  }
+  updateCounter();
+  counterInterval=setInterval(updateCounter,1000);
+}
+
+// ===== Timeline =====
+function revealTimeline(){
+  const items=document.querySelectorAll('.tl-item');
+  items.forEach(function(item,i){
+    setTimeout(function(){item.classList.add('show')},i*400);
+  });
+}
+
+// ===== Confetti =====
+let confettiRunning=false;
+function startConfetti(){
+  if(confettiRunning) return;
+  confettiRunning=true;
+  const finPage=document.getElementById('p9');
+  let cc=document.getElementById('confettiCanvas');
+  if(!cc){cc=document.createElement('canvas');cc.id='confettiCanvas';cc.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1';finPage.insertBefore(cc,finPage.firstChild)}
+  const cx=cc.getContext('2d');
+  cc.width=finPage.offsetWidth;cc.height=finPage.offsetHeight;
+  const colors=['#f2a6c9','#f7c5d0','#e880a8','#ff69b4','#ffb6c1','#ffd700','#ff1493','#fff'];
+  const pieces=[];
+  for(let i=0;i<120;i++){pieces.push({x:Math.random()*cc.width,y:Math.random()*cc.height-cc.height,w:Math.random()*8+4,h:Math.random()*4+2,r:Math.random()*Math.PI*2,rs:(Math.random()-0.5)*0.08,dy:Math.random()*2+1,dx:(Math.random()-0.5)*0.8,c:colors[Math.floor(Math.random()*colors.length)],a:0.7+Math.random()*0.3})}
+  function animConfetti(){
+    cx.clearRect(0,0,cc.width,cc.height);
+    pieces.forEach(function(p){
+      p.y+=p.dy;p.x+=p.dx;p.r+=p.rs;
+      if(p.y>cc.height+10){p.y=-10;p.x=Math.random()*cc.width}
+      cx.save();cx.translate(p.x,p.y);cx.rotate(p.r);cx.globalAlpha=p.a;cx.fillStyle=p.c;cx.fillRect(-p.w/2,-p.h/2,p.w,p.h);cx.restore();
+    });
+    if(confettiRunning)requestAnimationFrame(animConfetti);
+  }
+  animConfetti();
+}
 
 // ===== Music =====
 const tracks=[
@@ -752,7 +893,7 @@ function startDrawing(){
 // ===== Finale =====
 const fc=document.getElementById('finaleCanvas'),fx=fc.getContext('2d');
 let fp=[],fRunning=false;
-function resizeFinale(){const s=document.getElementById('p7');fc.width=s.offsetWidth;fc.height=s.offsetHeight}
+function resizeFinale(){const s=document.getElementById('p9');fc.width=s.offsetWidth;fc.height=s.offsetHeight}
 function initFinale(){
   fp=[];const em=['💖','🌸','🌹','🌷','💕','💗'];
   for(let i=0;i<45;i++)fp.push({x:Math.random()*fc.width,y:Math.random()*fc.height,e:em[Math.floor(Math.random()*em.length)],sz:12+Math.random()*18,sy:-(0.2+Math.random()*0.5),sx:(Math.random()-0.5)*0.3,a:0.3+Math.random()*0.5,r:Math.random()*Math.PI*2,rs:(Math.random()-0.5)*0.02});
@@ -774,6 +915,9 @@ window.restart=function(){
   dx.clearRect(0,0,dc.width,dc.height);
   document.getElementById('drawCaption').classList.remove('show');
   document.querySelectorAll('.reason-item').forEach(i=>i.classList.remove('show'));
+  document.querySelectorAll('.tl-item').forEach(i=>i.classList.remove('show'));
+  confettiRunning=false;
+  if(counterInterval){clearInterval(counterInterval);counterInterval=null}
   fRunning=false;
   pages.forEach(p=>{p.classList.remove('active','exit-up','exit-down')});
   cur=0;pages[0].classList.add('active');updateDots();
