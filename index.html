@@ -544,15 +544,9 @@
       <div class="song-artist" id="songArtist">Валентин Стрыкало</div>
     </div>
     <div class="player-row">
-      <button class="p-btn" id="prevBtn"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
       <button class="play-btn" id="playBtn"><svg viewBox="0 0 24 24" id="playIcon"><path d="M8 5v14l11-7z"/></svg></button>
-      <button class="p-btn" id="nextBtn"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zm10-12v12h2V6z"/></svg></button>
     </div>
     <div class="progress" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
-    <div class="track-dots">
-      <button class="dot on" data-t="0"></button>
-      <button class="dot" data-t="1"></button>
-    </div>
     <button class="nav-btn" onclick="goPage(4)" style="margin-top:12px">Дальше →</button>
   </div>
 </div>
@@ -674,7 +668,7 @@
         <div class="bday-label">дней осталось</div>
       </div>
       <div class="bday-card">
-        <div class="bday-name">Я 🎈</div>
+        <div class="bday-name">Алёша 🎈</div>
         <div class="bday-date">7 сентября</div>
         <div class="bday-days" id="bdayMe">—</div>
         <div class="bday-label">дней осталось</div>
@@ -888,12 +882,8 @@ function startConfetti(){
   animConfetti();
 }
 
-// ===== Music (iOS-safe) =====
-var tracks=[
-  {title:'Всё решено',artist:'Валентин Стрыкало',src:'assets/vse-resheno.mp3'},
-  {title:'Первомай',artist:'Валентин Стрыкало',src:'assets/pervomay.mp3'}
-];
-var cTrack=0,isPlaying=false,audioStarted=false,iosUnlocked=false;
+// ===== Music (single track, iOS-safe) =====
+var isPlaying=false,audioStarted=false;
 var audio=document.getElementById('audioPlayer');
 var vinyl=document.getElementById('vinyl');
 var playBtn=document.getElementById('playBtn');
@@ -902,92 +892,30 @@ var miniPlayer=document.getElementById('miniPlayer');
 function setPlayIcon(){document.getElementById('playIcon').innerHTML='<path d="M8 5v14l11-7z"/>'}
 function setPauseIcon(){document.getElementById('playIcon').innerHTML='<path d="M6 19h4V5H6zm8-14v14h4V5z"/>'}
 
-// iOS requires first play() to be DIRECTLY in a user gesture handler
-// We unlock the audio element by playing+pausing in the first touch
-function unlockiOS(){
-  if(iosUnlocked)return;
-  iosUnlocked=true;
-  audio.muted=true;
+function playAudio(){
   audio.play().then(function(){
-    audio.pause();
-    audio.muted=false;
-    audio.currentTime=0;
-  }).catch(function(){
-    audio.muted=false;
-  });
+    isPlaying=true;audioStarted=true;setPauseIcon();
+    vinyl.classList.add('spin');miniPlayer.textContent='⏸';
+  }).catch(function(){});
+}
+function pauseAudio(){
+  audio.pause();isPlaying=false;setPlayIcon();
+  vinyl.classList.remove('spin');miniPlayer.textContent='🎵';
+}
+function handlePlay(e){
+  if(e)e.preventDefault();
+  if(isPlaying){pauseAudio()}else{playAudio()}
 }
 
-// Unlock on ANY first touch anywhere on the page
-document.addEventListener('touchstart',function iosTouch(){
-  unlockiOS();
-  document.removeEventListener('touchstart',iosTouch);
-},{once:true,passive:true});
-document.addEventListener('click',function iosClick(){
-  unlockiOS();
-  document.removeEventListener('click',iosClick);
-},{once:true});
+// Attach to play button, vinyl, and mini player
+[playBtn,vinyl,miniPlayer].forEach(function(el){
+  el.addEventListener('click',handlePlay);
+});
 
-function loadT(i){
-  cTrack=i;
-  audio.src=tracks[i].src;
-  audio.load();
-  document.getElementById('songTitle').textContent=tracks[i].title;
-  document.getElementById('songArtist').textContent=tracks[i].artist;
-  document.querySelectorAll('.dot').forEach(function(d,j){d.classList.toggle('on',j===i)});
-  if(isPlaying){
-    var p=audio.play();
-    if(p)p.catch(function(){});
-  }
-}
-function doPlay(){
-  audio.muted=false;
-  var p=audio.play();
-  if(p){
-    p.then(function(){
-      isPlaying=true;audioStarted=true;setPauseIcon();
-      vinyl.classList.add('spin');miniPlayer.textContent='⏸';
-    }).catch(function(err){
-      // If play fails, try loading first then playing
-      audio.load();
-      setTimeout(function(){
-        var p2=audio.play();
-        if(p2){
-          p2.then(function(){
-            isPlaying=true;audioStarted=true;setPauseIcon();
-            vinyl.classList.add('spin');miniPlayer.textContent='⏸';
-          }).catch(function(){});
-        }
-      },100);
-    });
-  }
-}
-function togglePlay(e){
-  if(e){e.preventDefault();e.stopPropagation();}
-  unlockiOS();
-  if(isPlaying){
-    audio.pause();isPlaying=false;setPlayIcon();
-    vinyl.classList.remove('spin');miniPlayer.textContent='🎵';
-  } else {
-    doPlay();
-  }
-}
-// Use both touchend and click but prevent double-fire
-var playTouched=false;
-function onPlayTouch(e){playTouched=true;togglePlay(e)}
-function onPlayClick(e){if(!playTouched){togglePlay(e)}playTouched=false}
-playBtn.addEventListener('touchend',onPlayTouch,{passive:false});
-playBtn.addEventListener('click',onPlayClick);
-vinyl.addEventListener('touchend',onPlayTouch,{passive:false});
-vinyl.addEventListener('click',onPlayClick);
-miniPlayer.addEventListener('touchend',onPlayTouch,{passive:false});
-miniPlayer.addEventListener('click',onPlayClick);
-document.getElementById('prevBtn').addEventListener('touchend',function(e){e.preventDefault();loadT(cTrack===0?tracks.length-1:cTrack-1)});
-document.getElementById('prevBtn').addEventListener('click',function(){loadT(cTrack===0?tracks.length-1:cTrack-1)});
-document.getElementById('nextBtn').addEventListener('touchend',function(e){e.preventDefault();loadT((cTrack+1)%tracks.length)});
-document.getElementById('nextBtn').addEventListener('click',function(){loadT((cTrack+1)%tracks.length)});
-document.querySelectorAll('.dot').forEach(function(d){d.addEventListener('click',function(){loadT(+d.dataset.t)})});
+// Loop on end
+audio.addEventListener('ended',function(){audio.currentTime=0;playAudio()});
+// Progress bar
 audio.addEventListener('timeupdate',function(){if(audio.duration)document.getElementById('progressFill').style.width=(audio.currentTime/audio.duration*100)+'%'});
-audio.addEventListener('ended',function(){loadT((cTrack+1)%tracks.length);var p=audio.play();if(p)p.catch(function(){})});
 document.getElementById('progressBar').addEventListener('click',function(e){var r=e.currentTarget.getBoundingClientRect();audio.currentTime=(e.clientX-r.left)/r.width*audio.duration});
 
 // ===== Quiz =====
