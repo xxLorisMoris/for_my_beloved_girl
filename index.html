@@ -504,6 +504,11 @@
   </div>
 </div>
 
+<!-- Audio element in DOM for iOS compatibility -->
+<audio id="audioPlayer" preload="auto" playsinline webkit-playsinline>
+  <source src="assets/vse-resheno.mp3" type="audio/mpeg">
+</audio>
+
 <!-- Mini player -->
 <button class="mini-player" id="miniPlayer">🎵</button>
 
@@ -533,7 +538,7 @@ window.goPage = function(n){
   setTimeout(()=>{pages[prev].classList.remove('exit-up','exit-down')},700);
 
   // Triggers
-  if(n===2&&!audioStarted){unlockAudio();const p=audio.play();if(p)p.then(()=>{audioStarted=true;isPlaying=true;vinyl.classList.add('spin');setPauseIcon()}).catch(()=>{})}
+  if(n===2&&!audioStarted){/* no autoplay — user must tap Play on iOS */}
   if(n===2&&audioStarted) vinyl.classList.add('spin');
   if(n!==2) miniPlayer.classList.toggle('show',audioStarted&&isPlaying);
   if(n===4) initQuiz();
@@ -580,53 +585,47 @@ const tracks=[
   {title:'Всё решено',artist:'Валентин Стрыкало',src:'assets/vse-resheno.mp3'},
   {title:'Первомай',artist:'Валентин Стрыкало',src:'assets/pervomay.mp3'}
 ];
-let cTrack=0,isPlaying=false,audioStarted=false,audioUnlocked=false;
-const audio=document.createElement('audio');
-audio.preload='auto';audio.setAttribute('playsinline','');
-audio.setAttribute('webkit-playsinline','');audio.src=tracks[0].src;
+let cTrack=0,isPlaying=false,audioStarted=false;
+const audio=document.getElementById('audioPlayer');
 const vinyl=document.getElementById('vinyl');
 const playBtn=document.getElementById('playBtn');
 const miniPlayer=document.getElementById('miniPlayer');
-
-// iOS audio unlock: must happen inside a direct user touch/click handler
-function unlockAudio(){
-  if(audioUnlocked)return;
-  audio.volume=0;
-  const p=audio.play();
-  if(p)p.then(()=>{audio.pause();audio.currentTime=0;audio.volume=1;audioUnlocked=true}).catch(()=>{audio.volume=1});
-  else{audio.pause();audio.currentTime=0;audio.volume=1;audioUnlocked=true}
-}
-document.addEventListener('touchstart',unlockAudio,{once:true});
-document.addEventListener('click',unlockAudio,{once:true});
 
 function setPlayIcon(){document.getElementById('playIcon').innerHTML='<path d="M8 5v14l11-7z"/>'}
 function setPauseIcon(){document.getElementById('playIcon').innerHTML='<path d="M6 19h4V5H6zm8-14v14h4V5z"/>'}
 
 function loadT(i){
-  cTrack=i;audio.src=tracks[i].src;audio.load();
+  cTrack=i;
+  audio.src=tracks[i].src;
+  audio.load();
   document.getElementById('songTitle').textContent=tracks[i].title;
   document.getElementById('songArtist').textContent=tracks[i].artist;
   document.querySelectorAll('.dot').forEach((d,j)=>d.classList.toggle('on',j===i));
-  if(isPlaying){const p=audio.play();if(p)p.catch(()=>{})}
+  if(isPlaying){audio.play().catch(function(){});}
 }
 function togglePlay(){
-  unlockAudio();
-  if(isPlaying){audio.pause();isPlaying=false;setPlayIcon();vinyl.classList.remove('spin');miniPlayer.textContent='🎵'}
-  else{
-    const p=audio.play();
-    if(p)p.then(()=>{isPlaying=true;audioStarted=true;setPauseIcon();vinyl.classList.add('spin');miniPlayer.textContent='⏸'}).catch(()=>{});
-    else{isPlaying=true;audioStarted=true;setPauseIcon();vinyl.classList.add('spin');miniPlayer.textContent='⏸'}
+  if(isPlaying){
+    audio.pause();isPlaying=false;setPlayIcon();
+    vinyl.classList.remove('spin');miniPlayer.textContent='🎵';
+  } else {
+    audio.play().then(function(){
+      isPlaying=true;audioStarted=true;setPauseIcon();
+      vinyl.classList.add('spin');miniPlayer.textContent='⏸';
+    }).catch(function(){});
   }
 }
+playBtn.addEventListener('touchend',function(e){e.preventDefault();togglePlay()});
 playBtn.addEventListener('click',togglePlay);
+vinyl.addEventListener('touchend',function(e){e.preventDefault();togglePlay()});
 vinyl.addEventListener('click',togglePlay);
+miniPlayer.addEventListener('touchend',function(e){e.preventDefault();togglePlay()});
 miniPlayer.addEventListener('click',togglePlay);
-document.getElementById('prevBtn').addEventListener('click',()=>loadT(cTrack===0?tracks.length-1:cTrack-1));
-document.getElementById('nextBtn').addEventListener('click',()=>loadT((cTrack+1)%tracks.length));
-document.querySelectorAll('.dot').forEach(d=>d.addEventListener('click',()=>loadT(+d.dataset.t)));
-audio.addEventListener('timeupdate',()=>{if(audio.duration)document.getElementById('progressFill').style.width=(audio.currentTime/audio.duration*100)+'%'});
-audio.addEventListener('ended',()=>{loadT((cTrack+1)%tracks.length);const p=audio.play();if(p)p.catch(()=>{})});
-document.getElementById('progressBar').addEventListener('click',e=>{const r=e.currentTarget.getBoundingClientRect();audio.currentTime=(e.clientX-r.left)/r.width*audio.duration});
+document.getElementById('prevBtn').addEventListener('click',function(){loadT(cTrack===0?tracks.length-1:cTrack-1)});
+document.getElementById('nextBtn').addEventListener('click',function(){loadT((cTrack+1)%tracks.length)});
+document.querySelectorAll('.dot').forEach(function(d){d.addEventListener('click',function(){loadT(+d.dataset.t)})});
+audio.addEventListener('timeupdate',function(){if(audio.duration)document.getElementById('progressFill').style.width=(audio.currentTime/audio.duration*100)+'%'});
+audio.addEventListener('ended',function(){loadT((cTrack+1)%tracks.length);audio.play().catch(function(){})});
+document.getElementById('progressBar').addEventListener('click',function(e){var r=e.currentTarget.getBoundingClientRect();audio.currentTime=(e.clientX-r.left)/r.width*audio.duration});
 
 // ===== Quiz =====
 const quizData=[
