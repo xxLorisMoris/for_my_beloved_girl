@@ -293,6 +293,28 @@
     }
     .draw-caption.show{opacity:1}
 
+    /* ===== Best moments ===== */
+    .moments-grid{
+      display:flex;flex-direction:column;gap:12px;width:100%;max-width:340px;margin-top:12px;
+    }
+    .moment-card{
+      background:var(--card);border:1px solid var(--card-border);
+      border-radius:20px;padding:16px 18px;
+      backdrop-filter:blur(8px);text-align:left;
+      display:flex;align-items:center;gap:14px;
+      opacity:0;transform:translateY(12px);
+      transition:all 0.5s ease;
+    }
+    .moment-card.show{opacity:1;transform:translateY(0)}
+    .moment-emoji{font-size:2rem;flex-shrink:0}
+    .moment-title{
+      font-family:'Caveat',cursive;font-size:1.2rem;color:var(--accent);
+      line-height:1.2;
+    }
+    .moment-desc{
+      font-size:0.85rem;color:var(--text-muted);margin-top:2px;line-height:1.3;
+    }
+
     /* ===== Counter ===== */
     .counter-grid{
       display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:16px;
@@ -512,8 +534,22 @@
   </div>
 </div>
 
-<!-- PAGE 6: Tux -->
+<!-- PAGE 6: Best moments -->
 <div class="page" id="p5">
+  <div class="page-content">
+    <h2>Наши лучшие моменты 🌟</h2>
+    <div class="divider"></div>
+    <div class="moments-grid" id="momentsGrid">
+      <div class="moment-card"><div class="moment-emoji">🎮</div><div><div class="moment-title">Играли в Майнкрафт вместе</div><div class="moment-desc">Строили наш маленький мир, как строим нашу любовь</div></div></div>
+      <div class="moment-card"><div class="moment-emoji">🎬</div><div><div class="moment-title">Смотрели фильмы вместе</div><div class="moment-desc">Каждый фильм с тобой — особенный, даже если засыпали</div></div></div>
+      <div class="moment-card"><div class="moment-emoji">📞</div><div><div class="moment-title">Разговаривали по звонку</div><div class="moment-desc">Часами, до утра... и не хотелось вешать трубку</div></div></div>
+    </div>
+    <button class="nav-btn" onclick="goPage(6)" style="margin-top:16px">Дальше →</button>
+  </div>
+</div>
+
+<!-- PAGE 7: Tux -->
+<div class="page" id="p6">
   <div class="page-content">
     <h2>Наш талисман, Сашуль 🐧</h2>
     <div class="divider"></div>
@@ -521,12 +557,12 @@
     <div class="glass">
       <p class="handwriting">Этот пингвинчик — как наша любовь: особенный, тёплый и неповторимый. Он напоминает мне о нас каждый раз, когда я его вижу.</p>
     </div>
-    <button class="nav-btn" onclick="goPage(6)">Дальше →</button>
+    <button class="nav-btn" onclick="goPage(7)">Дальше →</button>
   </div>
 </div>
 
-<!-- PAGE 7: Quiz -->
-<div class="page" id="p6">
+<!-- PAGE 8: Quiz -->
+<div class="page" id="p7">
   <div class="page-content">
     <h2>А ты помнишь, Сашенька? 💭</h2>
     <div class="divider"></div>
@@ -537,12 +573,12 @@
       <div class="quiz-result" id="quizResult"></div>
     </div>
     <button class="nav-btn" id="quizNext" style="display:none" onclick="nextQuiz()">Следующий вопрос →</button>
-    <button class="nav-btn" id="quizFinish" style="display:none" onclick="goPage(7)">Продолжить 💖</button>
+    <button class="nav-btn" id="quizFinish" style="display:none" onclick="goPage(8)">Продолжить 💖</button>
   </div>
 </div>
 
-<!-- PAGE 8: Reasons I love you (replaces letter) -->
-<div class="page" id="p7">
+<!-- PAGE 9: Reasons I love you (replaces letter) -->
+<div class="page" id="p8">
   <div class="page-content">
     <h2>Почему я люблю тебя 💖</h2>
     <div class="divider"></div>
@@ -557,23 +593,23 @@
         <div class="reason-item"><div class="reason-num">6</div><div class="reason-text">За то, что ты — мой человек, моя любимая, моё всё</div></div>
       </div>
     </div>
-    <button class="nav-btn" onclick="goPage(8)">Дальше →</button>
+    <button class="nav-btn" onclick="goPage(9)">Дальше →</button>
   </div>
 </div>
 
-<!-- PAGE 9: Drawing -->
-<div class="page" id="p8">
+<!-- PAGE 10: Drawing -->
+<div class="page" id="p9">
   <div class="page-content">
     <h2>Это мы, любимая ❤️</h2>
     <div class="divider"></div>
     <canvas id="drawCanvas" width="280" height="280"></canvas>
     <div class="draw-caption" id="drawCaption">Люблю тебя, моя Киса 💖</div>
-    <button class="nav-btn" onclick="goPage(9)">Дальше →</button>
+    <button class="nav-btn" onclick="goPage(10)">Дальше →</button>
   </div>
 </div>
 
-<!-- PAGE 10: Finale -->
-<div class="page" id="p9" style="position:relative">
+<!-- PAGE 11: Finale -->
+<div class="page" id="p10" style="position:relative">
   <canvas id="finaleCanvas"></canvas>
   <div class="page-content finale-wrap">
     <div class="finale-heart">💖</div>
@@ -600,7 +636,7 @@
 (function(){
 'use strict';
 
-const TOTAL_PAGES = 10;
+const TOTAL_PAGES = 11;
 let cur = 0;
 const pages = Array.from({length:TOTAL_PAGES},(_,i)=>document.getElementById('p'+i));
 
@@ -627,10 +663,11 @@ window.goPage = function(n){
   if(n===3&&audioStarted) vinyl.classList.add('spin');
   if(n!==3) miniPlayer.classList.toggle('show',audioStarted&&isPlaying);
   if(n===4) revealTimeline();
-  if(n===6) initQuiz();
-  if(n===7) revealReasons();
-  if(n===8) startDrawing();
-  if(n===9){resizeFinale();initFinale();animFinale();startConfetti()}
+  if(n===5) revealMoments();
+  if(n===7) initQuiz();
+  if(n===8) revealReasons();
+  if(n===9) startDrawing();
+  if(n===10){resizeFinale();initFinale();animFinale();startConfetti()}
 };
 
 // ===== Bokeh particles =====
@@ -695,12 +732,20 @@ function revealTimeline(){
   });
 }
 
+// ===== Best moments =====
+function revealMoments(){
+  var cards=document.querySelectorAll('.moment-card');
+  cards.forEach(function(card,i){
+    setTimeout(function(){card.classList.add('show')},i*350);
+  });
+}
+
 // ===== Confetti =====
 let confettiRunning=false;
 function startConfetti(){
   if(confettiRunning) return;
   confettiRunning=true;
-  const finPage=document.getElementById('p9');
+  const finPage=document.getElementById('p10');
   let cc=document.getElementById('confettiCanvas');
   if(!cc){cc=document.createElement('canvas');cc.id='confettiCanvas';cc.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1';finPage.insertBefore(cc,finPage.firstChild)}
   const cx=cc.getContext('2d');
@@ -720,19 +765,44 @@ function startConfetti(){
   animConfetti();
 }
 
-// ===== Music =====
-const tracks=[
+// ===== Music (iOS-safe) =====
+var tracks=[
   {title:'Всё решено',artist:'Валентин Стрыкало',src:'assets/vse-resheno.mp3'},
   {title:'Первомай',artist:'Валентин Стрыкало',src:'assets/pervomay.mp3'}
 ];
-let cTrack=0,isPlaying=false,audioStarted=false;
-const audio=document.getElementById('audioPlayer');
-const vinyl=document.getElementById('vinyl');
-const playBtn=document.getElementById('playBtn');
-const miniPlayer=document.getElementById('miniPlayer');
+var cTrack=0,isPlaying=false,audioStarted=false,iosUnlocked=false;
+var audio=document.getElementById('audioPlayer');
+var vinyl=document.getElementById('vinyl');
+var playBtn=document.getElementById('playBtn');
+var miniPlayer=document.getElementById('miniPlayer');
 
 function setPlayIcon(){document.getElementById('playIcon').innerHTML='<path d="M8 5v14l11-7z"/>'}
 function setPauseIcon(){document.getElementById('playIcon').innerHTML='<path d="M6 19h4V5H6zm8-14v14h4V5z"/>'}
+
+// iOS requires first play() to be DIRECTLY in a user gesture handler
+// We unlock the audio element by playing+pausing in the first touch
+function unlockiOS(){
+  if(iosUnlocked)return;
+  iosUnlocked=true;
+  audio.muted=true;
+  audio.play().then(function(){
+    audio.pause();
+    audio.muted=false;
+    audio.currentTime=0;
+  }).catch(function(){
+    audio.muted=false;
+  });
+}
+
+// Unlock on ANY first touch anywhere on the page
+document.addEventListener('touchstart',function iosTouch(){
+  unlockiOS();
+  document.removeEventListener('touchstart',iosTouch);
+},{once:true,passive:true});
+document.addEventListener('click',function iosClick(){
+  unlockiOS();
+  document.removeEventListener('click',iosClick);
+},{once:true});
 
 function loadT(i){
   cTrack=i;
@@ -740,31 +810,61 @@ function loadT(i){
   audio.load();
   document.getElementById('songTitle').textContent=tracks[i].title;
   document.getElementById('songArtist').textContent=tracks[i].artist;
-  document.querySelectorAll('.dot').forEach((d,j)=>d.classList.toggle('on',j===i));
-  if(isPlaying){audio.play().catch(function(){});}
+  document.querySelectorAll('.dot').forEach(function(d,j){d.classList.toggle('on',j===i)});
+  if(isPlaying){
+    var p=audio.play();
+    if(p)p.catch(function(){});
+  }
 }
-function togglePlay(){
+function doPlay(){
+  audio.muted=false;
+  var p=audio.play();
+  if(p){
+    p.then(function(){
+      isPlaying=true;audioStarted=true;setPauseIcon();
+      vinyl.classList.add('spin');miniPlayer.textContent='⏸';
+    }).catch(function(err){
+      // If play fails, try loading first then playing
+      audio.load();
+      setTimeout(function(){
+        var p2=audio.play();
+        if(p2){
+          p2.then(function(){
+            isPlaying=true;audioStarted=true;setPauseIcon();
+            vinyl.classList.add('spin');miniPlayer.textContent='⏸';
+          }).catch(function(){});
+        }
+      },100);
+    });
+  }
+}
+function togglePlay(e){
+  if(e){e.preventDefault();e.stopPropagation();}
+  unlockiOS();
   if(isPlaying){
     audio.pause();isPlaying=false;setPlayIcon();
     vinyl.classList.remove('spin');miniPlayer.textContent='🎵';
   } else {
-    audio.play().then(function(){
-      isPlaying=true;audioStarted=true;setPauseIcon();
-      vinyl.classList.add('spin');miniPlayer.textContent='⏸';
-    }).catch(function(){});
+    doPlay();
   }
 }
-playBtn.addEventListener('touchend',function(e){e.preventDefault();togglePlay()});
-playBtn.addEventListener('click',togglePlay);
-vinyl.addEventListener('touchend',function(e){e.preventDefault();togglePlay()});
-vinyl.addEventListener('click',togglePlay);
-miniPlayer.addEventListener('touchend',function(e){e.preventDefault();togglePlay()});
-miniPlayer.addEventListener('click',togglePlay);
+// Use both touchend and click but prevent double-fire
+var playTouched=false;
+function onPlayTouch(e){playTouched=true;togglePlay(e)}
+function onPlayClick(e){if(!playTouched){togglePlay(e)}playTouched=false}
+playBtn.addEventListener('touchend',onPlayTouch,{passive:false});
+playBtn.addEventListener('click',onPlayClick);
+vinyl.addEventListener('touchend',onPlayTouch,{passive:false});
+vinyl.addEventListener('click',onPlayClick);
+miniPlayer.addEventListener('touchend',onPlayTouch,{passive:false});
+miniPlayer.addEventListener('click',onPlayClick);
+document.getElementById('prevBtn').addEventListener('touchend',function(e){e.preventDefault();loadT(cTrack===0?tracks.length-1:cTrack-1)});
 document.getElementById('prevBtn').addEventListener('click',function(){loadT(cTrack===0?tracks.length-1:cTrack-1)});
+document.getElementById('nextBtn').addEventListener('touchend',function(e){e.preventDefault();loadT((cTrack+1)%tracks.length)});
 document.getElementById('nextBtn').addEventListener('click',function(){loadT((cTrack+1)%tracks.length)});
 document.querySelectorAll('.dot').forEach(function(d){d.addEventListener('click',function(){loadT(+d.dataset.t)})});
 audio.addEventListener('timeupdate',function(){if(audio.duration)document.getElementById('progressFill').style.width=(audio.currentTime/audio.duration*100)+'%'});
-audio.addEventListener('ended',function(){loadT((cTrack+1)%tracks.length);audio.play().catch(function(){})});
+audio.addEventListener('ended',function(){loadT((cTrack+1)%tracks.length);var p=audio.play();if(p)p.catch(function(){})});
 document.getElementById('progressBar').addEventListener('click',function(e){var r=e.currentTarget.getBoundingClientRect();audio.currentTime=(e.clientX-r.left)/r.width*audio.duration});
 
 // ===== Quiz =====
@@ -892,7 +992,7 @@ function startDrawing(){
 // ===== Finale =====
 const fc=document.getElementById('finaleCanvas'),fx=fc.getContext('2d');
 let fp=[],fRunning=false;
-function resizeFinale(){const s=document.getElementById('p9');fc.width=s.offsetWidth;fc.height=s.offsetHeight}
+function resizeFinale(){const s=document.getElementById('p10');fc.width=s.offsetWidth;fc.height=s.offsetHeight}
 function initFinale(){
   fp=[];const em=['💖','🌸','🌹','🌷','💕','💗'];
   for(let i=0;i<45;i++)fp.push({x:Math.random()*fc.width,y:Math.random()*fc.height,e:em[Math.floor(Math.random()*em.length)],sz:12+Math.random()*18,sy:-(0.2+Math.random()*0.5),sx:(Math.random()-0.5)*0.3,a:0.3+Math.random()*0.5,r:Math.random()*Math.PI*2,rs:(Math.random()-0.5)*0.02});
@@ -915,6 +1015,7 @@ window.restart=function(){
   document.getElementById('drawCaption').classList.remove('show');
   document.querySelectorAll('.reason-item').forEach(i=>i.classList.remove('show'));
   document.querySelectorAll('.tl-item').forEach(i=>i.classList.remove('show'));
+  document.querySelectorAll('.moment-card').forEach(i=>i.classList.remove('show'));
   confettiRunning=false;
   if(counterInterval){clearInterval(counterInterval);counterInterval=null}
   fRunning=false;
