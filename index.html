@@ -364,6 +364,44 @@
       line-height:1.4;margin-top:2px;
     }
 
+    /* ===== Predictions ===== */
+    .prediction-card{
+      background:var(--card);border:1px solid var(--card-border);
+      border-radius:24px;padding:24px 20px;max-width:320px;
+      backdrop-filter:blur(8px);text-align:center;margin-top:12px;
+      min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    }
+    .prediction-emoji{font-size:2.5rem;margin-bottom:8px}
+    .prediction-text{
+      font-family:'Caveat',cursive;font-size:1.3rem;color:var(--text);line-height:1.4;
+    }
+    .prediction-btn{
+      background:none;border:2px solid var(--accent);color:var(--accent);
+      border-radius:50px;padding:10px 24px;font-size:0.9rem;cursor:pointer;
+      margin-top:16px;transition:all 0.3s;font-family:'Inter',sans-serif;
+    }
+    .prediction-btn:hover{background:var(--accent);color:#fff}
+    .prediction-fade{animation:predFade 0.5s ease}
+    @keyframes predFade{0%{opacity:0;transform:scale(0.9)}100%{opacity:1;transform:scale(1)}}
+
+    /* ===== Birthday countdown ===== */
+    .bday-grid{
+      display:flex;flex-direction:column;gap:16px;width:100%;max-width:340px;margin-top:12px;
+    }
+    .bday-card{
+      background:var(--card);border:1px solid var(--card-border);
+      border-radius:20px;padding:18px;backdrop-filter:blur(8px);text-align:center;
+    }
+    .bday-name{
+      font-family:'Caveat',cursive;font-size:1.3rem;color:var(--accent);margin-bottom:4px;
+    }
+    .bday-date{font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px}
+    .bday-days{
+      font-family:'Cormorant Garamond',serif;font-size:2.8rem;font-weight:700;
+      color:var(--accent);line-height:1;margin:8px 0 2px;
+    }
+    .bday-label{font-size:0.8rem;color:var(--text-muted)}
+
     /* ===== Confetti canvas ===== */
     #confettiCanvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1}
 
@@ -608,8 +646,46 @@
   </div>
 </div>
 
-<!-- PAGE 11: Finale -->
-<div class="page" id="p10" style="position:relative">
+<!-- PAGE 11: Predictions -->
+<div class="page" id="p10">
+  <div class="page-content">
+    <h2>Наше будущее 🔮</h2>
+    <div class="divider"></div>
+    <p class="subtitle">Нажми и узнай, что нас ждёт</p>
+    <div class="prediction-card" id="predCard">
+      <div class="prediction-emoji" id="predEmoji">🔮</div>
+      <div class="prediction-text" id="predText">Нажми кнопку, чтобы узнать...</div>
+    </div>
+    <button class="prediction-btn" id="predBtn" onclick="nextPrediction()">✨ Предсказать ✨</button>
+    <button class="nav-btn" onclick="goPage(11)" style="margin-top:16px">Дальше →</button>
+  </div>
+</div>
+
+<!-- PAGE 12: Birthday countdown -->
+<div class="page" id="p11">
+  <div class="page-content">
+    <h2>Ближайшие дни рождения 🎂</h2>
+    <div class="divider"></div>
+    <div class="bday-grid">
+      <div class="bday-card">
+        <div class="bday-name">Сашенька 🎀</div>
+        <div class="bday-date">14 января</div>
+        <div class="bday-days" id="bdaySasha">—</div>
+        <div class="bday-label">дней осталось</div>
+      </div>
+      <div class="bday-card">
+        <div class="bday-name">Я 🎈</div>
+        <div class="bday-date">7 сентября</div>
+        <div class="bday-days" id="bdayMe">—</div>
+        <div class="bday-label">дней осталось</div>
+      </div>
+    </div>
+    <button class="nav-btn" onclick="goPage(12)" style="margin-top:16px">Дальше →</button>
+  </div>
+</div>
+
+<!-- PAGE 13: Finale -->
+<div class="page" id="p12" style="position:relative">
   <canvas id="finaleCanvas"></canvas>
   <div class="page-content finale-wrap">
     <div class="finale-heart">💖</div>
@@ -636,7 +712,7 @@
 (function(){
 'use strict';
 
-const TOTAL_PAGES = 11;
+const TOTAL_PAGES = 13;
 let cur = 0;
 const pages = Array.from({length:TOTAL_PAGES},(_,i)=>document.getElementById('p'+i));
 
@@ -667,7 +743,8 @@ window.goPage = function(n){
   if(n===7) initQuiz();
   if(n===8) revealReasons();
   if(n===9) startDrawing();
-  if(n===10){resizeFinale();initFinale();animFinale();startConfetti()}
+  if(n===11) updateBdays();
+  if(n===12){resizeFinale();initFinale();animFinale();startConfetti()}
 };
 
 // ===== Bokeh particles =====
@@ -740,12 +817,58 @@ function revealMoments(){
   });
 }
 
+// ===== Predictions =====
+var predictions=[
+  {e:'💍',t:'Однажды мы будем танцевать наш первый танец как муж и жена'},
+  {e:'🏡',t:'У нас будет уютный дом, где каждый угол пропитан любовью'},
+  {e:'🌅',t:'Мы встретим рассвет на берегу океана, держась за руки'},
+  {e:'🐱',t:'У нас будет котик, который будет спать между нами'},
+  {e:'🎄',t:'Через 50 лет мы будем наряжать ёлку вместе, как сейчас'},
+  {e:'✈️',t:'Мы объездим весь мир вместе — и каждое место станет нашим'},
+  {e:'👶',t:'Мы будем самыми счастливыми родителями на свете'},
+  {e:'🌙',t:'Каждый вечер мы будем засыпать, шепча друг другу «люблю»'},
+  {e:'📸',t:'Наш альбом с фотографиями не поместится ни в один шкаф'},
+  {e:'🎂',t:'Мы будем праздновать каждую годовщину ещё ярче, чем эту'},
+  {e:'🧸',t:'В старости мы будем сидеть на веранде и вспоминать, как всё начиналось'},
+  {e:'🎮',t:'Мы будем играть в игры вместе даже когда нам будет по 80'},
+  {e:'💌',t:'Я буду писать тебе письма, даже когда мы живём в одном доме'},
+  {e:'🌸',t:'Каждую весну я буду дарить тебе цветы — просто потому что люблю'},
+  {e:'🎬',t:'Мы пересмотрим все фильмы мира, обнимаясь на диване'}
+];
+var predIdx=-1,usedPreds=[];
+window.nextPrediction=function(){
+  if(usedPreds.length>=predictions.length)usedPreds=[];
+  var available=predictions.filter(function(_,i){return usedPreds.indexOf(i)===-1});
+  var ri=Math.floor(Math.random()*available.length);
+  var oi=predictions.indexOf(available[ri]);
+  usedPreds.push(oi);
+  var p=predictions[oi];
+  var card=document.getElementById('predCard');
+  card.classList.remove('prediction-fade');
+  void card.offsetWidth;
+  card.classList.add('prediction-fade');
+  document.getElementById('predEmoji').textContent=p.e;
+  document.getElementById('predText').textContent=p.t;
+};
+
+// ===== Birthday countdown =====
+function daysUntilBday(month,day){
+  var now=new Date();
+  var bday=new Date(now.getFullYear(),month-1,day);
+  if(bday<=now)bday=new Date(now.getFullYear()+1,month-1,day);
+  return Math.ceil((bday-now)/86400000);
+}
+function updateBdays(){
+  document.getElementById('bdaySasha').textContent=daysUntilBday(1,14);
+  document.getElementById('bdayMe').textContent=daysUntilBday(9,7);
+}
+
 // ===== Confetti =====
 let confettiRunning=false;
 function startConfetti(){
   if(confettiRunning) return;
   confettiRunning=true;
-  const finPage=document.getElementById('p10');
+  const finPage=document.getElementById('p12');
   let cc=document.getElementById('confettiCanvas');
   if(!cc){cc=document.createElement('canvas');cc.id='confettiCanvas';cc.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1';finPage.insertBefore(cc,finPage.firstChild)}
   const cx=cc.getContext('2d');
@@ -992,7 +1115,7 @@ function startDrawing(){
 // ===== Finale =====
 const fc=document.getElementById('finaleCanvas'),fx=fc.getContext('2d');
 let fp=[],fRunning=false;
-function resizeFinale(){const s=document.getElementById('p10');fc.width=s.offsetWidth;fc.height=s.offsetHeight}
+function resizeFinale(){const s=document.getElementById('p12');fc.width=s.offsetWidth;fc.height=s.offsetHeight}
 function initFinale(){
   fp=[];const em=['💖','🌸','🌹','🌷','💕','💗'];
   for(let i=0;i<45;i++)fp.push({x:Math.random()*fc.width,y:Math.random()*fc.height,e:em[Math.floor(Math.random()*em.length)],sz:12+Math.random()*18,sy:-(0.2+Math.random()*0.5),sx:(Math.random()-0.5)*0.3,a:0.3+Math.random()*0.5,r:Math.random()*Math.PI*2,rs:(Math.random()-0.5)*0.02});
