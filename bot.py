@@ -41,6 +41,7 @@ from database import (
     get_history_limit, set_history_limit,
     get_required_channels, add_required_channel, remove_required_channel,
     get_setting, set_setting,
+    ban_user, unban_user, is_user_banned,
 )
 from system_prompt import get_system_prompt, MODES
 from utils import extract_text_for_rag, scrape_web_page, find_urls
@@ -529,6 +530,12 @@ async def _send_sub_wall(target, user_id: int, lang: str, edit: bool = False):
     return True
 
 
+async def _check_ban(user_id: int) -> bool:
+    if user_id in ADMIN_IDS:
+        return False
+    return await is_user_banned(user_id)
+
+
 async def _enforce_sub(message_or_callback, user_id: int) -> bool:
     channels = await get_required_channels()
     if not channels:
@@ -684,7 +691,7 @@ async def admin_user_lookup_exec(message: Message, state: FSMContext):
     if message.from_user.id not in ADMIN_IDS:
         return
     lang = await get_user_language(message.from_user.id)
-    if message.text == "/cancel":
+    if message.text and message.text.strip() in ("/cancel", "cancel"):
         await state.clear()
         await message.answer(L("admin_cancelled", lang))
         return
@@ -704,8 +711,11 @@ async def admin_user_lookup_exec(message: Message, state: FSMContext):
     mode = await get_user_mode(uid)
     ulang = await get_user_language(uid)
 
+    banned = await is_user_banned(uid)
+    ban_status = f'\n{pe("cross")} <b>{L("admin_banned", lang)}</b>' if banned else ""
+
     text = (
-        f'{pe("profile")} <b>{L("admin_user_label", lang)}</b> <code>{uid}</code>\n\n'
+        f'{pe("profile")} <b>{L("admin_user_label", lang)}</b> <code>{uid}</code>{ban_status}\n\n'
         f'{L("admin_mode_label", lang)}: <b>{L(f"mode_{mode}", lang)}</b>\n'
         f'{L("admin_model_label", lang)}: <code>{esc(model)}</code>\n'
         f'{L("admin_lang_label", lang)}: <code>{ulang}</code>\n'
@@ -714,8 +724,39 @@ async def admin_user_lookup_exec(message: Message, state: FSMContext):
         f'{stats["days_with_bot"]} {L("admin_days_with_us", lang)} {esc(stats["first_use"])})\n'
         f'{L("admin_last_active", lang)}: {esc(stats["last_activity"])}'
     )
-    await message.answer(text, parse_mode=ParseMode.HTML)
+    kb = []
+    if banned:
+        kb.append([InlineKeyboardButton(text=L("admin_unban", lang), callback_data=f"admin_unban:{uid}", icon_custom_emoji_id=peid("check"))])
+    else:
+        kb.append([InlineKeyboardButton(text=L("admin_ban", lang), callback_data=f"admin_ban:{uid}", icon_custom_emoji_id=peid("cross"))])
+    await message.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=kb), parse_mode=ParseMode.HTML)
     await state.clear()
+
+
+@dp.callback_query(F.data.startswith("admin_ban:"))
+async def admin_ban_cb(callback: CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS:
+        return
+    lang = await get_user_language(callback.from_user.id)
+    uid = int(callback.data.split(":", 1)[1])
+    done = await ban_user(uid)
+    if done:
+        await callback.answer(f"{L('admin_banned', lang)}: {uid}")
+    else:
+        await callback.answer(f"{uid} — {L('admin_already_banned', lang)}")
+
+
+@dp.callback_query(F.data.startswith("admin_unban:"))
+async def admin_unban_cb(callback: CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS:
+        return
+    lang = await get_user_language(callback.from_user.id)
+    uid = int(callback.data.split(":", 1)[1])
+    done = await unban_user(uid)
+    if done:
+        await callback.answer(f"{L('admin_unbanned', lang)}: {uid}")
+    else:
+        await callback.answer(f"{uid} — {L('admin_not_found', lang)}")
 
 
 @dp.callback_query(F.data == "admin_broadcast_select")
@@ -769,7 +810,7 @@ async def admin_direct_get_id(message: Message, state: FSMContext):
     if message.from_user.id not in ADMIN_IDS:
         return
     lang = await get_user_language(message.from_user.id)
-    if message.text == "/cancel":
+    if message.text and message.text.strip() in ("/cancel", "cancel"):
         await state.clear()
         await message.answer(L("admin_cancelled", lang))
         return
@@ -787,7 +828,7 @@ async def admin_direct_exec(message: Message, state: FSMContext):
     if message.from_user.id not in ADMIN_IDS:
         return
     lang = await get_user_language(message.from_user.id)
-    if message.text == "/cancel":
+    if message.text and message.text.strip() in ("/cancel", "cancel"):
         await state.clear()
         await message.answer(L("admin_cancelled", lang))
         return
@@ -805,7 +846,7 @@ async def admin_broadcast_execute(message: Message, state: FSMContext):
     if message.from_user.id not in ADMIN_IDS:
         return
     lang = await get_user_language(message.from_user.id)
-    if message.text == "/cancel":
+    if message.text and message.text.strip() in ("/cancel", "cancel"):
         await state.clear()
         await message.answer(L("admin_cancelled", lang))
         return
@@ -899,7 +940,7 @@ async def admin_set_history_input(message: Message, state: FSMContext):
     if message.from_user.id not in ADMIN_IDS:
         return
     lang = await get_user_language(message.from_user.id)
-    if message.text == "/cancel":
+    if message.text and message.text.strip() in ("/cancel", "cancel"):
         await state.clear()
         await message.answer(L("admin_cancelled", lang))
         return
@@ -1108,6 +1149,9 @@ async def admin_ch_add_cb(callback: CallbackQuery, state: FSMContext):
         f'<code>@username Name</code>\n\n'
         f'{L("admin_ch_private", lang)}\n'
         f'<code>CHAT_ID Name invite_link</code>\n\n'
+        f'Example:\n'
+        f'<code>@genix_news Genix News</code>\n'
+        f'<code>-1001234567890 Secret https://t.me/+abc</code>\n\n'
         f'{L("admin_cancel", lang)}',
         reply_markup=kb,
         parse_mode=ParseMode.HTML,
@@ -1120,7 +1164,9 @@ async def admin_ch_add_input(message: Message, state: FSMContext):
     if message.from_user.id not in ADMIN_IDS:
         return
     lang = await get_user_language(message.from_user.id)
-    if message.text == "/cancel":
+    if not message.text:
+        return
+    if message.text.strip() in ("/cancel", "cancel", L("admin_cancel_btn", lang)):
         await state.clear()
         await message.answer(L("admin_cancelled", lang))
         return
@@ -1129,7 +1175,7 @@ async def admin_ch_add_input(message: Message, state: FSMContext):
 
     if len(parts) < 2:
         await message.reply(
-            f'{L("admin_ch_format", lang)}: <code>@username Name</code>',
+            f'{L("admin_ch_format_hint", lang)}',
             parse_mode=ParseMode.HTML,
         )
         return
@@ -1150,7 +1196,7 @@ async def admin_ch_add_input(message: Message, state: FSMContext):
         name = " ".join(name_parts) if name_parts else f"Channel {channel_id}"
     else:
         await message.reply(
-            f'{L("admin_ch_format", lang)}: <code>@username Name</code>',
+            f'{L("admin_ch_format_hint", lang)}',
             parse_mode=ParseMode.HTML,
         )
         return
@@ -2188,6 +2234,8 @@ async def handle_message(message: Message):
 
     await track_chat(message)
     await update_user_activity(message.from_user.id)
+    if await _check_ban(message.from_user.id):
+        return
     if await _enforce_sub(message, message.from_user.id):
         return
     lang = await get_user_language(message.from_user.id)

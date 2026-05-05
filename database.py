@@ -10,6 +10,7 @@ _SETTINGS_DEFAULTS = {
     "default_image_model": "gpt-image-1",
     "default_mode": "useful",
     "welcome_message": "",
+    "banned_users": "[]",
 }
 
 
@@ -383,6 +384,38 @@ async def get_history_limit() -> int:
 
 async def set_history_limit(limit: int):
     await set_setting("history_limit", str(limit))
+
+
+async def get_banned_users() -> list[int]:
+    val = await get_setting("banned_users")
+    try:
+        users = json.loads(val)
+        return users if isinstance(users, list) else []
+    except (json.JSONDecodeError, TypeError):
+        return []
+
+
+async def ban_user(user_id: int) -> bool:
+    banned = await get_banned_users()
+    if user_id in banned:
+        return False
+    banned.append(user_id)
+    await set_setting("banned_users", json.dumps(banned))
+    return True
+
+
+async def unban_user(user_id: int) -> bool:
+    banned = await get_banned_users()
+    if user_id not in banned:
+        return False
+    banned.remove(user_id)
+    await set_setting("banned_users", json.dumps(banned))
+    return True
+
+
+async def is_user_banned(user_id: int) -> bool:
+    banned = await get_banned_users()
+    return user_id in banned
 
 
 async def get_required_channels() -> list[dict]:
