@@ -594,36 +594,36 @@ async def check_sub_cb(callback: CallbackQuery):
 
 
 # ═══════════════════════════════════════════
-# ADMIN PANEL (bilingual EN)
+# ADMIN PANEL (bilingual RU/EN)
 # ═══════════════════════════════════════════
 
-def _admin_text(stats: dict) -> str:
+def _admin_text(stats: dict, lang: str = "ru") -> str:
     return (
-        f'{pe("lock")} <b>Admin Panel</b>\n\n'
-        f'{pe("people")} Users: <code>{stats["total_users_db"]}</code>\n'
-        f'{pe("stats")} Chats: <code>{stats["total_chats_known"]}</code>  '
-        f'(private: {stats["private_chats"]} · groups: {stats["group_chats"]})\n'
-        f'{pe("send")} 24h: <code>{stats["msgs_24h"]}</code> msgs\n'
-        f'{pe("growth")} Total: <code>{stats["total_msgs"]}</code> msgs\n'
-        f'{pe("brush")} Images: <code>{stats["total_images"]}</code>\n'
+        f'{pe("lock")} <b>{L("admin_title", lang)}</b>\n\n'
+        f'{pe("people")} {L("admin_users", lang)}: <code>{stats["total_users_db"]}</code>\n'
+        f'{pe("stats")} {L("admin_chats", lang)}: <code>{stats["total_chats_known"]}</code>  '
+        f'({L("admin_private", lang)}: {stats["private_chats"]} · {L("admin_groups", lang)}: {stats["group_chats"]})\n'
+        f'{pe("send")} {L("admin_24h", lang)}: <code>{stats["msgs_24h"]}</code> {L("admin_msgs", lang)}\n'
+        f'{pe("growth")} {L("admin_total", lang)}: <code>{stats["total_msgs"]}</code> {L("admin_msgs", lang)}\n'
+        f'{pe("brush")} {L("admin_images", lang)}: <code>{stats["total_images"]}</code>\n'
     )
 
 
-def _admin_keyboard() -> InlineKeyboardMarkup:
+def _admin_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="Broadcast", callback_data="admin_broadcast_select", icon_custom_emoji_id=peid("horn")),
-            InlineKeyboardButton(text="Write by ID", callback_data="admin_direct_start", icon_custom_emoji_id=peid("send")),
+            InlineKeyboardButton(text=L("admin_broadcast", lang), callback_data="admin_broadcast_select", icon_custom_emoji_id=peid("horn")),
+            InlineKeyboardButton(text=L("admin_write_id", lang), callback_data="admin_direct_start", icon_custom_emoji_id=peid("send")),
         ],
         [
-            InlineKeyboardButton(text="Top Users", callback_data="admin_top_users", icon_custom_emoji_id=peid("growth")),
-            InlineKeyboardButton(text="Find User", callback_data="admin_user_lookup", icon_custom_emoji_id=peid("eye")),
+            InlineKeyboardButton(text=L("admin_top_users", lang), callback_data="admin_top_users", icon_custom_emoji_id=peid("growth")),
+            InlineKeyboardButton(text=L("admin_find_user", lang), callback_data="admin_user_lookup", icon_custom_emoji_id=peid("eye")),
         ],
         [
-            InlineKeyboardButton(text="Channels", callback_data="admin_channels", icon_custom_emoji_id=peid("horn")),
-            InlineKeyboardButton(text="Settings", callback_data="admin_settings", icon_custom_emoji_id=peid("settings")),
+            InlineKeyboardButton(text=L("admin_channels", lang), callback_data="admin_channels", icon_custom_emoji_id=peid("horn")),
+            InlineKeyboardButton(text=L("admin_settings", lang), callback_data="admin_settings", icon_custom_emoji_id=peid("settings")),
         ],
-        [InlineKeyboardButton(text="Refresh", callback_data="admin_refresh", icon_custom_emoji_id=peid("loading"))],
+        [InlineKeyboardButton(text=L("admin_refresh", lang), callback_data="admin_refresh", icon_custom_emoji_id=peid("loading"))],
     ])
 
 
@@ -631,36 +631,39 @@ def _admin_keyboard() -> InlineKeyboardMarkup:
 async def cmd_admin(message: Message):
     if message.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(message.from_user.id)
     stats = await get_global_stats()
-    await message.answer(_admin_text(stats), reply_markup=_admin_keyboard(), parse_mode=ParseMode.HTML)
+    await message.answer(_admin_text(stats, lang), reply_markup=_admin_keyboard(lang), parse_mode=ParseMode.HTML)
 
 
 @dp.callback_query(F.data == "admin_refresh")
 async def admin_refresh(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(callback.from_user.id)
     stats = await get_global_stats()
     try:
-        await callback.message.edit_text(_admin_text(stats), reply_markup=_admin_keyboard(), parse_mode=ParseMode.HTML)
+        await callback.message.edit_text(_admin_text(stats, lang), reply_markup=_admin_keyboard(lang), parse_mode=ParseMode.HTML)
     except Exception:
         pass
-    await callback.answer("Updated")
+    await callback.answer(L("admin_updated", lang))
 
 
 @dp.callback_query(F.data == "admin_top_users")
 async def admin_top_users(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(callback.from_user.id)
     users = await get_top_users(10)
     if not users:
-        await callback.answer("No data", show_alert=True)
+        await callback.answer(L("admin_no_data", lang), show_alert=True)
         return
 
-    lines = [f'{pe("growth")} <b>Top Users</b>\n']
+    lines = [f'{pe("growth")} <b>{L("admin_top", lang)}</b>\n']
     for i, u in enumerate(users):
-        lines.append(f'{i+1}. <code>{u["user_id"]}</code> — {u["total_messages"]} msgs')
+        lines.append(f'{i+1}. <code>{u["user_id"]}</code> — {u["total_messages"]} {L("admin_msgs", lang)}')
 
-    kb = [[InlineKeyboardButton(text="Back", callback_data="admin_refresh", icon_custom_emoji_id=peid("settings"))]]
+    kb = [[InlineKeyboardButton(text=L("admin_back", lang), callback_data="admin_refresh", icon_custom_emoji_id=peid("settings"))]]
     await callback.message.edit_text("\n".join(lines), reply_markup=InlineKeyboardMarkup(inline_keyboard=kb), parse_mode=ParseMode.HTML)
 
 
@@ -668,8 +671,9 @@ async def admin_top_users(callback: CallbackQuery):
 async def admin_user_lookup(callback: CallbackQuery, state: FSMContext):
     if callback.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(callback.from_user.id)
     await callback.message.edit_text(
-        f'{pe("eye")} <b>Enter User ID:</b>\n\n/cancel — cancel',
+        f'{pe("eye")} <b>{L("admin_enter_id", lang)}</b>\n\n{L("admin_cancel", lang)}',
         parse_mode=ParseMode.HTML,
     )
     await state.set_state(AdminStates.waiting_for_user_lookup_id)
@@ -679,19 +683,20 @@ async def admin_user_lookup(callback: CallbackQuery, state: FSMContext):
 async def admin_user_lookup_exec(message: Message, state: FSMContext):
     if message.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(message.from_user.id)
     if message.text == "/cancel":
         await state.clear()
-        await message.answer("Cancelled.")
+        await message.answer(L("admin_cancelled", lang))
         return
     try:
         uid = int(message.text)
     except ValueError:
-        await message.answer("Enter numeric ID.")
+        await message.answer(L("admin_enter_num_id", lang))
         return
 
     stats = await get_user_stats(uid)
     if not stats:
-        await message.answer(f"User <code>{uid}</code> not found.", parse_mode=ParseMode.HTML)
+        await message.answer(f"{L('admin_user_label', lang)} <code>{uid}</code> — {L('admin_not_found', lang)}", parse_mode=ParseMode.HTML)
         await state.clear()
         return
 
@@ -700,14 +705,14 @@ async def admin_user_lookup_exec(message: Message, state: FSMContext):
     ulang = await get_user_language(uid)
 
     text = (
-        f'{pe("profile")} <b>User</b> <code>{uid}</code>\n\n'
-        f'Mode: <b>{L(f"mode_{mode}", "en")}</b>\n'
-        f'Model: <code>{esc(model)}</code>\n'
-        f'Lang: <code>{ulang}</code>\n'
-        f'Messages: <b>{stats["total_messages"]}</b> ({stats["avg_per_day"]}/day)\n'
-        f'Images: {stats["total_images"]} · Voice: {stats["total_voice"]} · PDF: {stats["total_pdfs"]}\n'
-        f'With us: {stats["days_with_bot"]} days (since {esc(stats["first_use"])})\n'
-        f'Last active: {esc(stats["last_activity"])}'
+        f'{pe("profile")} <b>{L("admin_user_label", lang)}</b> <code>{uid}</code>\n\n'
+        f'{L("admin_mode_label", lang)}: <b>{L(f"mode_{mode}", lang)}</b>\n'
+        f'{L("admin_model_label", lang)}: <code>{esc(model)}</code>\n'
+        f'{L("admin_lang_label", lang)}: <code>{ulang}</code>\n'
+        f'{L("admin_msgs_label", lang)}: <b>{stats["total_messages"]}</b> ({stats["avg_per_day"]}{L("admin_per_day", lang)})\n'
+        f'{L("admin_images", lang)}: {stats["total_images"]} · Voice: {stats["total_voice"]} · PDF: {stats["total_pdfs"]}\n'
+        f'{stats["days_with_bot"]} {L("admin_days_with_us", lang)} {esc(stats["first_use"])})\n'
+        f'{L("admin_last_active", lang)}: {esc(stats["last_activity"])}'
     )
     await message.answer(text, parse_mode=ParseMode.HTML)
     await state.clear()
@@ -717,14 +722,15 @@ async def admin_user_lookup_exec(message: Message, state: FSMContext):
 async def admin_broadcast_select(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(callback.from_user.id)
     kb = [
-        [InlineKeyboardButton(text="Private only", callback_data="bc_type_private", icon_custom_emoji_id=peid("lock"))],
-        [InlineKeyboardButton(text="Groups only", callback_data="bc_type_group", icon_custom_emoji_id=peid("people"))],
-        [InlineKeyboardButton(text="All", callback_data="bc_type_all", icon_custom_emoji_id=peid("horn"))],
-        [InlineKeyboardButton(text="Back", callback_data="admin_refresh", icon_custom_emoji_id=peid("settings"))],
+        [InlineKeyboardButton(text=L("admin_private_only", lang), callback_data="bc_type_private", icon_custom_emoji_id=peid("lock"))],
+        [InlineKeyboardButton(text=L("admin_groups_only", lang), callback_data="bc_type_group", icon_custom_emoji_id=peid("people"))],
+        [InlineKeyboardButton(text=L("admin_all", lang), callback_data="bc_type_all", icon_custom_emoji_id=peid("horn"))],
+        [InlineKeyboardButton(text=L("admin_back", lang), callback_data="admin_refresh", icon_custom_emoji_id=peid("settings"))],
     ]
     await callback.message.edit_text(
-        f'{pe("horn")} <b>Where to send?</b>',
+        f'{pe("horn")} <b>{L("admin_where_send", lang)}</b>',
         reply_markup=InlineKeyboardMarkup(inline_keyboard=kb), parse_mode=ParseMode.HTML,
     )
 
@@ -733,11 +739,13 @@ async def admin_broadcast_select(callback: CallbackQuery):
 async def admin_broadcast_start(callback: CallbackQuery, state: FSMContext):
     if callback.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(callback.from_user.id)
     bc_type = callback.data.split("_", 2)[2]
     await state.update_data(bc_type=bc_type)
-    label = {"all": "all", "private": "private"}.get(bc_type, "groups")
+    label_map = {"all": L("admin_all", lang), "private": L("admin_private_only", lang)}
+    label = label_map.get(bc_type, L("admin_groups_only", lang))
     await callback.message.edit_text(
-        f'{pe("horn")} <b>Broadcast to {label}</b>\n\nSend a message.\n/cancel — cancel',
+        f'{pe("horn")} <b>{L("admin_broadcast_to", lang)} {label}</b>\n\n{L("admin_send_msg", lang)}\n{L("admin_cancel", lang)}',
         parse_mode=ParseMode.HTML,
     )
     await state.set_state(AdminStates.waiting_for_broadcast_content)
@@ -748,8 +756,9 @@ async def admin_broadcast_start(callback: CallbackQuery, state: FSMContext):
 async def admin_direct_start(callback: CallbackQuery, state: FSMContext):
     if callback.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(callback.from_user.id)
     await callback.message.edit_text(
-        f'{pe("send")} <b>Enter User/Chat ID:</b>\n\n/cancel — cancel',
+        f'{pe("send")} <b>{L("admin_enter_id", lang)}</b>\n\n{L("admin_cancel", lang)}',
         parse_mode=ParseMode.HTML,
     )
     await state.set_state(AdminStates.waiting_for_specific_chat_id)
@@ -759,31 +768,33 @@ async def admin_direct_start(callback: CallbackQuery, state: FSMContext):
 async def admin_direct_get_id(message: Message, state: FSMContext):
     if message.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(message.from_user.id)
     if message.text == "/cancel":
         await state.clear()
-        await message.answer("Cancelled.")
+        await message.answer(L("admin_cancelled", lang))
         return
     try:
         target_id = int(message.text)
         await state.update_data(target_chat_id=target_id)
-        await message.answer(f'Target: <code>{target_id}</code>\nSend a message:', parse_mode=ParseMode.HTML)
+        await message.answer(f'{L("admin_target", lang)}: <code>{target_id}</code>\n{L("admin_send_msg", lang)}', parse_mode=ParseMode.HTML)
         await state.set_state(AdminStates.waiting_for_specific_broadcast_content)
     except ValueError:
-        await message.answer("Enter numeric ID.")
+        await message.answer(L("admin_enter_num_id", lang))
 
 
 @dp.message(AdminStates.waiting_for_specific_broadcast_content)
 async def admin_direct_exec(message: Message, state: FSMContext):
     if message.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(message.from_user.id)
     if message.text == "/cancel":
         await state.clear()
-        await message.answer("Cancelled.")
+        await message.answer(L("admin_cancelled", lang))
         return
     data = await state.get_data()
     try:
         await message.copy_to(data['target_chat_id'])
-        await message.answer(f'{pe("check")} Sent', parse_mode=ParseMode.HTML)
+        await message.answer(f'{pe("check")} {L("admin_sent", lang)}', parse_mode=ParseMode.HTML)
     except Exception as e:
         await message.answer(f'{pe("cross")} {esc(str(e))}', parse_mode=ParseMode.HTML)
     await state.clear()
@@ -793,16 +804,17 @@ async def admin_direct_exec(message: Message, state: FSMContext):
 async def admin_broadcast_execute(message: Message, state: FSMContext):
     if message.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(message.from_user.id)
     if message.text == "/cancel":
         await state.clear()
-        await message.answer("Cancelled.")
+        await message.answer(L("admin_cancelled", lang))
         return
 
     data = await state.get_data()
     bc_type = data.get('bc_type', 'all')
     chat_ids = await get_all_chat_ids() if bc_type == "all" else await get_chats_by_type(bc_type)
 
-    status = await message.answer(f'{pe("loading")} Broadcasting... 0/{len(chat_ids)}', parse_mode=ParseMode.HTML)
+    status = await message.answer(f'{pe("loading")} {L("admin_broadcasting", lang)} 0/{len(chat_ids)}', parse_mode=ParseMode.HTML)
     success, blocked, errors = 0, 0, 0
 
     for i, cid in enumerate(chat_ids):
@@ -818,15 +830,15 @@ async def admin_broadcast_execute(message: Message, state: FSMContext):
         if (i + 1) % 50 == 0:
             try:
                 await status.edit_text(
-                    f'{pe("loading")} Broadcasting... {i+1}/{len(chat_ids)}',
+                    f'{pe("loading")} {L("admin_broadcasting", lang)} {i+1}/{len(chat_ids)}',
                     parse_mode=ParseMode.HTML,
                 )
             except Exception:
                 pass
 
     await status.edit_text(
-        f'{pe("check")} <b>Broadcast complete</b>\n\n'
-        f'Success: {success}\nBlocked/kicked: {blocked}\nErrors: {errors}',
+        f'{pe("check")} <b>{L("admin_bc_done", lang)}</b>\n\n'
+        f'{L("admin_bc_success", lang)}: {success}\n{L("admin_bc_blocked", lang)}: {blocked}\n{L("admin_bc_errors", lang)}: {errors}',
         parse_mode=ParseMode.HTML,
     )
     await state.clear()
@@ -840,31 +852,32 @@ async def admin_broadcast_execute(message: Message, state: FSMContext):
 async def admin_settings_cb(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(callback.from_user.id)
     h_limit = await get_history_limit()
     def_model = await get_setting("default_model") or DEFAULT_MODEL
     def_img = await get_setting("default_image_model") or "gpt-image-1"
     def_mode = await get_setting("default_mode") or "useful"
     def_model_name = AVAILABLE_MODELS.get(def_model, def_model)
     def_img_name = IMAGE_MODELS.get(def_img, {}).get("name", def_img)
-    mode_label = L(f"mode_{def_mode}", "en")
+    mode_label = L(f"mode_{def_mode}", lang)
 
     text = (
-        f'{pe("settings")} <b>Bot Settings</b>\n\n'
-        f'{pe("file")} History limit: <code>{h_limit}</code> msgs\n'
-        f'{pe("bot")} Default model: <code>{esc(def_model_name)}</code>\n'
-        f'{pe("brush")} Default image model: <code>{esc(def_img_name)}</code>\n'
-        f'{pe("smile")} Default mode: <code>{esc(mode_label)}</code>\n'
+        f'{pe("settings")} <b>{L("admin_bot_settings", lang)}</b>\n\n'
+        f'{pe("file")} {L("admin_history_limit", lang)}: <code>{h_limit}</code> {L("admin_msgs", lang)}\n'
+        f'{pe("bot")} {L("admin_default_model", lang)}: <code>{esc(def_model_name)}</code>\n'
+        f'{pe("brush")} {L("admin_default_img", lang)}: <code>{esc(def_img_name)}</code>\n'
+        f'{pe("smile")} {L("admin_default_mode", lang)}: <code>{esc(mode_label)}</code>\n'
     )
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="History Limit", callback_data="admin_set_history",
+        [InlineKeyboardButton(text=L("admin_history_limit", lang), callback_data="admin_set_history",
                               icon_custom_emoji_id=peid("file"))],
-        [InlineKeyboardButton(text="Default Model", callback_data="admin_set_def_model",
+        [InlineKeyboardButton(text=L("admin_default_model", lang), callback_data="admin_set_def_model",
                               icon_custom_emoji_id=peid("bot"))],
-        [InlineKeyboardButton(text="Default Image Model", callback_data="admin_set_def_img",
+        [InlineKeyboardButton(text=L("admin_default_img", lang), callback_data="admin_set_def_img",
                               icon_custom_emoji_id=peid("brush"))],
-        [InlineKeyboardButton(text="Default Mode", callback_data="admin_set_def_mode",
+        [InlineKeyboardButton(text=L("admin_default_mode", lang), callback_data="admin_set_def_mode",
                               icon_custom_emoji_id=peid("smile"))],
-        [InlineKeyboardButton(text="Back", callback_data="admin_refresh", icon_custom_emoji_id=peid("settings"))],
+        [InlineKeyboardButton(text=L("admin_back", lang), callback_data="admin_refresh", icon_custom_emoji_id=peid("settings"))],
     ])
     await callback.message.edit_text(text, reply_markup=kb, parse_mode=ParseMode.HTML)
 
@@ -873,8 +886,9 @@ async def admin_settings_cb(callback: CallbackQuery):
 async def admin_set_history_cb(callback: CallbackQuery, state: FSMContext):
     if callback.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(callback.from_user.id)
     await callback.message.edit_text(
-        f'{pe("file")} <b>History Limit</b>\n\nEnter new number (1-500):',
+        f'{pe("file")} <b>{L("admin_history_limit", lang)}</b>\n\n{L("admin_new_limit", lang)}\n{L("admin_cancel", lang)}',
         parse_mode=ParseMode.HTML,
     )
     await state.set_state(AdminStates.waiting_for_history_limit)
@@ -884,18 +898,23 @@ async def admin_set_history_cb(callback: CallbackQuery, state: FSMContext):
 async def admin_set_history_input(message: Message, state: FSMContext):
     if message.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(message.from_user.id)
+    if message.text == "/cancel":
+        await state.clear()
+        await message.answer(L("admin_cancelled", lang))
+        return
     try:
         val = int(message.text.strip())
         if val < 1 or val > 500:
             raise ValueError
     except (ValueError, TypeError):
-        await message.reply("Enter number 1-500.")
+        await message.reply(L("admin_limit_range", lang))
         return
 
     await set_history_limit(val)
     await state.clear()
     await message.reply(
-        f'{pe("check")} History limit set to <code>{val}</code>',
+        f'{pe("check")} {L("admin_limit_set", lang)} <code>{val}</code>',
         parse_mode=ParseMode.HTML,
     )
 
@@ -904,40 +923,67 @@ async def admin_set_history_input(message: Message, state: FSMContext):
 async def admin_set_def_model_cb(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(callback.from_user.id)
     cur = await get_setting("default_model") or DEFAULT_MODEL
     kb = []
     for cat, cat_data in MODEL_CATEGORIES.items():
-        for mid, info in cat_data["models"].items():
-            check = " ·" if mid == cur else ""
-            kb.append([InlineKeyboardButton(
-                text=f"{info['name']}{check}",
-                callback_data=f"admin_defm:{mid}",
-                icon_custom_emoji_id=peid(info.get("pe_key", "bot")),
-            )])
-    kb.append([InlineKeyboardButton(text="Back", callback_data="admin_settings", icon_custom_emoji_id=peid("settings"))])
+        cat_pe = cat_data.get("_pe_key", "bot")
+        kb.append([InlineKeyboardButton(text=cat, callback_data=f"admin_mcat:{cat}", icon_custom_emoji_id=peid(cat_pe))])
+    kb.append([InlineKeyboardButton(text=L("admin_back", lang), callback_data="admin_settings", icon_custom_emoji_id=peid("settings"))])
     await callback.message.edit_text(
-        f'{pe("bot")} <b>Choose default model:</b>\n\nCurrent: <code>{esc(cur)}</code>',
+        f'{pe("bot")} <b>{L("admin_choose_model", lang)}</b>\n\n{L("model_current", lang)}: <code>{esc(cur)}</code>',
         reply_markup=InlineKeyboardMarkup(inline_keyboard=kb), parse_mode=ParseMode.HTML,
     )
+
+
+@dp.callback_query(F.data.startswith("admin_mcat:"))
+async def admin_model_cat_cb(callback: CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS:
+        return
+    lang = await get_user_language(callback.from_user.id)
+    cat = callback.data.split(":", 1)[1]
+    cat_data = MODEL_CATEGORIES.get(cat, {})
+    models = cat_data.get("models", {})
+    cur = await get_setting("default_model") or DEFAULT_MODEL
+
+    kb = []
+    for mid, info in models.items():
+        check = " ·" if mid == cur else ""
+        kb.append([InlineKeyboardButton(
+            text=f"{info['name']}{check}",
+            callback_data=f"admin_defm:{mid}",
+            icon_custom_emoji_id=peid(info.get("pe_key", "bot")),
+        )])
+    kb.append([InlineKeyboardButton(text=L("admin_back", lang), callback_data="admin_set_def_model", icon_custom_emoji_id=peid("settings"))])
+
+    cat_pe = cat_data.get("_pe_key", "bot")
+    lines = [f'{pe(cat_pe)} <b>{esc(cat)}</b>\n']
+    for mid, info in models.items():
+        m = "▸" if mid == cur else "·"
+        lines.append(f'  {m} <b>{esc(info["name"])}</b> — {esc(info["desc"])}')
+
+    await callback.message.edit_text("\n".join(lines), reply_markup=InlineKeyboardMarkup(inline_keyboard=kb), parse_mode=ParseMode.HTML)
 
 
 @dp.callback_query(F.data.startswith("admin_defm:"))
 async def admin_set_def_model_exec(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(callback.from_user.id)
     mid = callback.data.split(":", 1)[1]
     if mid in AVAILABLE_MODELS:
         await set_setting("default_model", mid)
-        await callback.answer(f"Default model → {AVAILABLE_MODELS[mid]}")
+        await callback.answer(f"{L('admin_default_model', lang)} → {AVAILABLE_MODELS[mid]}")
         await admin_settings_cb(callback)
     else:
-        await callback.answer("Not found", show_alert=True)
+        await callback.answer(L("admin_not_found", lang), show_alert=True)
 
 
 @dp.callback_query(F.data == "admin_set_def_img")
 async def admin_set_def_img_cb(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(callback.from_user.id)
     cur = await get_setting("default_image_model") or "gpt-image-1"
     kb = []
     for mid, info in IMAGE_MODELS.items():
@@ -947,9 +993,9 @@ async def admin_set_def_img_cb(callback: CallbackQuery):
             callback_data=f"admin_defi:{mid}",
             icon_custom_emoji_id=peid(info.get("pe_key", "brush")),
         )])
-    kb.append([InlineKeyboardButton(text="Back", callback_data="admin_settings", icon_custom_emoji_id=peid("settings"))])
+    kb.append([InlineKeyboardButton(text=L("admin_back", lang), callback_data="admin_settings", icon_custom_emoji_id=peid("settings"))])
     await callback.message.edit_text(
-        f'{pe("brush")} <b>Choose default image model:</b>\n\nCurrent: <code>{esc(cur)}</code>',
+        f'{pe("brush")} <b>{L("admin_choose_img", lang)}</b>\n\n{L("model_current", lang)}: <code>{esc(cur)}</code>',
         reply_markup=InlineKeyboardMarkup(inline_keyboard=kb), parse_mode=ParseMode.HTML,
     )
 
@@ -958,31 +1004,33 @@ async def admin_set_def_img_cb(callback: CallbackQuery):
 async def admin_set_def_img_exec(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(callback.from_user.id)
     mid = callback.data.split(":", 1)[1]
     if mid in IMAGE_MODELS:
         await set_setting("default_image_model", mid)
-        await callback.answer(f"Default image model → {IMAGE_MODELS[mid]['name']}")
+        await callback.answer(f"{L('admin_default_img', lang)} → {IMAGE_MODELS[mid]['name']}")
         await admin_settings_cb(callback)
     else:
-        await callback.answer("Not found", show_alert=True)
+        await callback.answer(L("admin_not_found", lang), show_alert=True)
 
 
 @dp.callback_query(F.data == "admin_set_def_mode")
 async def admin_set_def_mode_cb(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(callback.from_user.id)
     cur = await get_setting("default_mode") or "useful"
     kb = []
     for mode_id, mode_info in MODES.items():
         check = " ·" if mode_id == cur else ""
         kb.append([InlineKeyboardButton(
-            text=f"{L(f'mode_{mode_id}', 'en')}{check}",
+            text=f"{L(f'mode_{mode_id}', lang)}{check}",
             callback_data=f"admin_defmode:{mode_id}",
             icon_custom_emoji_id=peid(mode_info["pe_key"]),
         )])
-    kb.append([InlineKeyboardButton(text="Back", callback_data="admin_settings", icon_custom_emoji_id=peid("settings"))])
+    kb.append([InlineKeyboardButton(text=L("admin_back", lang), callback_data="admin_settings", icon_custom_emoji_id=peid("settings"))])
     await callback.message.edit_text(
-        f'{pe("smile")} <b>Choose default mode:</b>\n\nCurrent: <code>{esc(cur)}</code>',
+        f'{pe("smile")} <b>{L("admin_choose_mode", lang)}</b>\n\n{L("mode_current", lang)}: <code>{esc(cur)}</code>',
         reply_markup=InlineKeyboardMarkup(inline_keyboard=kb), parse_mode=ParseMode.HTML,
     )
 
@@ -991,13 +1039,14 @@ async def admin_set_def_mode_cb(callback: CallbackQuery):
 async def admin_set_def_mode_exec(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(callback.from_user.id)
     mid = callback.data.split(":", 1)[1]
     if mid in MODES:
         await set_setting("default_mode", mid)
-        await callback.answer(f"Default mode → {L(f'mode_{mid}', 'en')}")
+        await callback.answer(f"{L('admin_default_mode', lang)} → {L(f'mode_{mid}', lang)}")
         await admin_settings_cb(callback)
     else:
-        await callback.answer("Not found", show_alert=True)
+        await callback.answer(L("admin_not_found", lang), show_alert=True)
 
 
 # ═══════════════════════════════════════════
@@ -1008,10 +1057,11 @@ async def admin_set_def_mode_exec(callback: CallbackQuery):
 async def admin_channels_cb(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(callback.from_user.id)
     channels = await get_required_channels()
 
     if channels:
-        lines = [f'{pe("horn")} <b>Required Channels</b>\n']
+        lines = [f'{pe("horn")} <b>{L("admin_req_channels", lang)}</b>\n']
         for i, ch in enumerate(channels, 1):
             ch_id = ch.get("channel_id", ch.get("username", ""))
             invite = ch.get("invite_link", "")
@@ -1023,18 +1073,18 @@ async def admin_channels_cb(callback: CallbackQuery):
                 display = f'@{ch_id.lstrip("@")}'
             lines.append(f'{i}. <b>{esc(ch["name"])}</b> — {display}')
     else:
-        lines = [f'{pe("horn")} <b>Required Channels</b>\n\nList empty — no subscription required.']
+        lines = [f'{pe("horn")} <b>{L("admin_req_channels", lang)}</b>\n\n{L("admin_ch_empty", lang)}']
 
     kb_rows = []
-    kb_rows.append([InlineKeyboardButton(text="Add Channel", callback_data="admin_ch_add",
+    kb_rows.append([InlineKeyboardButton(text=L("admin_ch_add", lang), callback_data="admin_ch_add",
                                           icon_custom_emoji_id=peid("check"))])
     for ch in channels:
         ch_id = ch.get("channel_id", ch.get("username", "")).lstrip("@")
         kb_rows.append([InlineKeyboardButton(
-            text=f"Delete {ch['name']}", callback_data=f"admin_ch_del:{ch_id}",
+            text=f"{L('admin_ch_delete', lang)} {ch['name']}", callback_data=f"admin_ch_del:{ch_id}",
             icon_custom_emoji_id=peid("trash"),
         )])
-    kb_rows.append([InlineKeyboardButton(text="Back", callback_data="admin_refresh",
+    kb_rows.append([InlineKeyboardButton(text=L("admin_back", lang), callback_data="admin_refresh",
                                           icon_custom_emoji_id=peid("settings"))])
 
     await callback.message.edit_text(
@@ -1048,14 +1098,18 @@ async def admin_channels_cb(callback: CallbackQuery):
 async def admin_ch_add_cb(callback: CallbackQuery, state: FSMContext):
     if callback.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(callback.from_user.id)
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=L("admin_cancel_btn", lang), callback_data="admin_channels", icon_custom_emoji_id=peid("cross"))],
+    ])
     await callback.message.edit_text(
-        f'{pe("horn")} <b>Add Channel</b>\n\n'
-        f'Send in format:\n'
+        f'{pe("horn")} <b>{L("admin_ch_add", lang)}</b>\n\n'
+        f'{L("admin_ch_format", lang)}\n'
         f'<code>@username Name</code>\n\n'
-        f'For private channels:\n'
+        f'{L("admin_ch_private", lang)}\n'
         f'<code>CHAT_ID Name invite_link</code>\n\n'
-        f'Example: <code>@genix_news Genix News</code>\n'
-        f'Private: <code>-1001234567890 Secret Channel https://t.me/+abc123</code>',
+        f'{L("admin_cancel", lang)}',
+        reply_markup=kb,
         parse_mode=ParseMode.HTML,
     )
     await state.set_state(AdminStates.waiting_for_channel_add)
@@ -1065,12 +1119,17 @@ async def admin_ch_add_cb(callback: CallbackQuery, state: FSMContext):
 async def admin_ch_add_input(message: Message, state: FSMContext):
     if message.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(message.from_user.id)
+    if message.text == "/cancel":
+        await state.clear()
+        await message.answer(L("admin_cancelled", lang))
+        return
     text = message.text.strip()
     parts = text.split(None)
 
     if len(parts) < 2:
         await message.reply(
-            "Format: <code>@username Name</code> or <code>CHAT_ID Name invite_link</code>",
+            f'{L("admin_ch_format", lang)}: <code>@username Name</code>',
             parse_mode=ParseMode.HTML,
         )
         return
@@ -1091,7 +1150,7 @@ async def admin_ch_add_input(message: Message, state: FSMContext):
         name = " ".join(name_parts) if name_parts else f"Channel {channel_id}"
     else:
         await message.reply(
-            "Format: <code>@username Name</code> or <code>CHAT_ID Name invite_link</code>",
+            f'{L("admin_ch_format", lang)}: <code>@username Name</code>',
             parse_mode=ParseMode.HTML,
         )
         return
@@ -1101,12 +1160,12 @@ async def admin_ch_add_input(message: Message, state: FSMContext):
 
     if added:
         await message.reply(
-            f'{pe("check")} Channel <b>{esc(name)}</b> added',
+            f'{pe("check")} {L("admin_ch_added", lang)} <b>{esc(name)}</b>',
             parse_mode=ParseMode.HTML,
         )
     else:
         await message.reply(
-            f'{pe("cross")} Channel already in list',
+            f'{pe("cross")} {L("admin_ch_exists", lang)}',
             parse_mode=ParseMode.HTML,
         )
 
@@ -1115,13 +1174,14 @@ async def admin_ch_add_input(message: Message, state: FSMContext):
 async def admin_ch_del_cb(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS:
         return
+    lang = await get_user_language(callback.from_user.id)
     ch_id = callback.data.split(":", 1)[1]
     removed = await remove_required_channel(ch_id)
 
     if removed:
-        await callback.answer(f"{ch_id} removed")
+        await callback.answer(f"{ch_id} {L('admin_ch_removed', lang)}")
     else:
-        await callback.answer(f"{ch_id} not found")
+        await callback.answer(L("admin_not_found", lang))
 
     await admin_channels_cb(callback)
 
