@@ -42,6 +42,7 @@ from database import (
     get_required_channels, add_required_channel, remove_required_channel,
     get_setting, set_setting,
     ban_user, unban_user, is_user_banned,
+    update_user_field,
 )
 from system_prompt import get_system_prompt, MODES
 from utils import extract_text_for_rag, scrape_web_page, find_urls
@@ -95,6 +96,8 @@ _PE = {
     "time":      ("🕓", "5775896410780079073"),
     "geo":       ("📍", "6042011682497106307"),
     "send":      ("⬆", "5963103826075456248"),
+    "mic":       ("🎤", "5870676941614354370"),
+    "doc":       ("📄", "5870528606328852614"),
 }
 
 
@@ -157,6 +160,7 @@ class AdminStates(StatesGroup):
     waiting_for_user_lookup_id = State()
     waiting_for_channel_add = State()
     waiting_for_history_limit = State()
+    waiting_for_stat_edit = State()
 
 
 # ═══════════════════════════════════════════
@@ -530,13 +534,29 @@ async def _send_sub_wall(target, user_id: int, lang: str, edit: bool = False):
     return True
 
 
-async def _check_ban(user_id: int) -> bool:
+async def _check_ban(target, user_id: int, edit: bool = False) -> bool:
     if user_id in ADMIN_IDS:
         return False
-    return await is_user_banned(user_id)
+    if not await is_user_banned(user_id):
+        return False
+    lang = await get_user_language(user_id)
+    text = (
+        f'{pe("cross")} <b>{L("ban_title", lang)}</b>\n\n'
+        f'{L("ban_text", lang)}'
+    )
+    if edit and hasattr(target, 'edit_text'):
+        try:
+            await target.edit_text(text, parse_mode=ParseMode.HTML)
+        except Exception:
+            await target.answer(text, parse_mode=ParseMode.HTML)
+    else:
+        await target.answer(text, parse_mode=ParseMode.HTML)
+    return True
 
 
 async def _enforce_sub(message_or_callback, user_id: int) -> bool:
+    if await _check_ban(message_or_callback, user_id):
+        return True
     channels = await get_required_channels()
     if not channels:
         return False
@@ -554,10 +574,17 @@ async def _enforce_sub(message_or_callback, user_id: int) -> bool:
 
 
 async def _enforce_sub_cb(callback: CallbackQuery) -> bool:
+    uid = callback.from_user.id
+    if uid not in ADMIN_IDS:
+        if callback.message:
+            if await _check_ban(callback.message, uid, edit=True):
+                return True
+        elif await is_user_banned(uid):
+            await callback.answer(L("ban_title", await get_user_language(uid)), show_alert=True)
+            return True
     channels = await get_required_channels()
     if not channels:
         return False
-    uid = callback.from_user.id
     if uid in ADMIN_IDS:
         return False
     if callback.message and callback.message.chat.type != "private":
@@ -634,13 +661,17 @@ def _admin_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
     ])
 
 
+async def _send_admin_panel(message: Message, lang: str):
+    stats = await get_global_stats()
+    await message.answer(_admin_text(stats, lang), reply_markup=_admin_keyboard(lang), parse_mode=ParseMode.HTML)
+
+
 @dp.message(Command("admin"))
 async def cmd_admin(message: Message):
     if message.from_user.id not in ADMIN_IDS:
         return
     lang = await get_user_language(message.from_user.id)
-    stats = await get_global_stats()
-    await message.answer(_admin_text(stats, lang), reply_markup=_admin_keyboard(lang), parse_mode=ParseMode.HTML)
+    await _send_admin_panel(message, lang)
 
 
 @dp.callback_query(F.data == "admin_refresh")
@@ -693,7 +724,7 @@ async def admin_user_lookup_exec(message: Message, state: FSMContext):
     lang = await get_user_language(message.from_user.id)
     if message.text and message.text.strip() in ("/cancel", "cancel"):
         await state.clear()
-        await message.answer(L("admin_cancelled", lang))
+        await _send_admin_panel(message, lang)
         return
     try:
         uid = int(message.text)
@@ -725,6 +756,7 @@ async def admin_user_lookup_exec(message: Message, state: FSMContext):
         f'{L("admin_last_active", lang)}: {esc(stats["last_activity"])}'
     )
     kb = []
+    kb.append([InlineKeyboardButton(text=L("admin_edit_stats", lang), callback_data=f"admin_editstats:{uid}", icon_custom_emoji_id=peid("settings"))])
     if banned:
         kb.append([InlineKeyboardButton(text=L("admin_unban", lang), callback_data=f"admin_unban:{uid}", icon_custom_emoji_id=peid("check"))])
     else:
@@ -757,6 +789,91 @@ async def admin_unban_cb(callback: CallbackQuery):
         await callback.answer(f"{L('admin_unbanned', lang)}: {uid}")
     else:
         await callback.answer(f"{uid} — {L('admin_not_found', lang)}")
+
+
+@dp.callback_query(F.data.startswith("admin_editstats:"))
+async def admin_edit_stats_cb(callback: CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS:
+        return
+    lang = await get_user_language(callback.from_user.id)
+    uid = callback.data.split(":", 1)[1]
+    kb = [
+        [InlineKeyboardButton(text=L("admin_edit_reg_date", lang), callback_data=f"admin_setfield:{uid}:first_use", icon_custom_emoji_id=peid("calendar"))],
+        [InlineKeyboardButton(text=L("admin_edit_msgs", lang), callback_data=f"admin_setfield:{uid}:total_messages", icon_custom_emoji_id=peid("stats"))],
+        [InlineKeyboardButton(text=L("admin_edit_imgs", lang), callback_data=f"admin_setfield:{uid}:total_images", icon_custom_emoji_id=peid("brush"))],
+        [InlineKeyboardButton(text=L("admin_edit_voice", lang), callback_data=f"admin_setfield:{uid}:total_voice", icon_custom_emoji_id=peid("mic"))],
+        [InlineKeyboardButton(text=L("admin_edit_pdfs", lang), callback_data=f"admin_setfield:{uid}:total_pdfs", icon_custom_emoji_id=peid("doc"))],
+        [InlineKeyboardButton(text=L("admin_back", lang), callback_data="admin_refresh", icon_custom_emoji_id=peid("settings"))],
+    ]
+    await callback.message.edit_text(
+        f'{pe("settings")} <b>{L("admin_edit_field", lang)}</b>\n\n'
+        f'{L("admin_user_label", lang)}: <code>{uid}</code>',
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=kb),
+        parse_mode=ParseMode.HTML,
+    )
+
+
+@dp.callback_query(F.data.startswith("admin_setfield:"))
+async def admin_set_field_cb(callback: CallbackQuery, state: FSMContext):
+    if callback.from_user.id not in ADMIN_IDS:
+        return
+    lang = await get_user_language(callback.from_user.id)
+    parts = callback.data.split(":")
+    uid = parts[1]
+    field = parts[2]
+
+    field_labels = {
+        "first_use": L("admin_edit_reg_date", lang),
+        "total_messages": L("admin_edit_msgs", lang),
+        "total_images": L("admin_edit_imgs", lang),
+        "total_voice": L("admin_edit_voice", lang),
+        "total_pdfs": L("admin_edit_pdfs", lang),
+    }
+    label = field_labels.get(field, field)
+
+    hint = ""
+    if field == "first_use":
+        hint = f'\n\n<i>DD.MM.YYYY HH:MM</i>'
+    else:
+        hint = f'\n\n<i>0, 100, 500...</i>'
+
+    await state.set_data({"edit_uid": int(uid), "edit_field": field})
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=L("admin_cancel_btn", lang), callback_data=f"admin_editstats:{uid}", icon_custom_emoji_id=peid("cross"))],
+    ])
+    await callback.message.edit_text(
+        f'{pe("settings")} <b>{label}</b>\n\n'
+        f'{L("admin_enter_value", lang)}{hint}\n\n'
+        f'{L("admin_cancel", lang)}',
+        reply_markup=kb,
+        parse_mode=ParseMode.HTML,
+    )
+    await state.set_state(AdminStates.waiting_for_stat_edit)
+
+
+@dp.message(AdminStates.waiting_for_stat_edit)
+async def admin_stat_edit_input(message: Message, state: FSMContext):
+    if message.from_user.id not in ADMIN_IDS:
+        return
+    lang = await get_user_language(message.from_user.id)
+    if not message.text:
+        return
+    if message.text.strip() in ("/cancel", "cancel", L("admin_cancel_btn", lang)):
+        await state.clear()
+        await _send_admin_panel(message, lang)
+        return
+
+    data = await state.get_data()
+    uid = data.get("edit_uid")
+    field = data.get("edit_field")
+    value = message.text.strip()
+
+    ok = await update_user_field(uid, field, value)
+    await state.clear()
+    if ok:
+        await message.answer(f'{pe("check")} {L("admin_stat_updated", lang)}: <code>{value}</code>', parse_mode=ParseMode.HTML)
+    else:
+        await message.answer(f'{pe("cross")} {L("admin_invalid_value", lang)}')
 
 
 @dp.callback_query(F.data == "admin_broadcast_select")
@@ -812,7 +929,7 @@ async def admin_direct_get_id(message: Message, state: FSMContext):
     lang = await get_user_language(message.from_user.id)
     if message.text and message.text.strip() in ("/cancel", "cancel"):
         await state.clear()
-        await message.answer(L("admin_cancelled", lang))
+        await _send_admin_panel(message, lang)
         return
     try:
         target_id = int(message.text)
@@ -830,7 +947,7 @@ async def admin_direct_exec(message: Message, state: FSMContext):
     lang = await get_user_language(message.from_user.id)
     if message.text and message.text.strip() in ("/cancel", "cancel"):
         await state.clear()
-        await message.answer(L("admin_cancelled", lang))
+        await _send_admin_panel(message, lang)
         return
     data = await state.get_data()
     try:
@@ -848,7 +965,7 @@ async def admin_broadcast_execute(message: Message, state: FSMContext):
     lang = await get_user_language(message.from_user.id)
     if message.text and message.text.strip() in ("/cancel", "cancel"):
         await state.clear()
-        await message.answer(L("admin_cancelled", lang))
+        await _send_admin_panel(message, lang)
         return
 
     data = await state.get_data()
@@ -940,9 +1057,11 @@ async def admin_set_history_input(message: Message, state: FSMContext):
     if message.from_user.id not in ADMIN_IDS:
         return
     lang = await get_user_language(message.from_user.id)
-    if message.text and message.text.strip() in ("/cancel", "cancel"):
+    if not message.text:
+        return
+    if message.text.strip() in ("/cancel", "cancel"):
         await state.clear()
-        await message.answer(L("admin_cancelled", lang))
+        await _send_admin_panel(message, lang)
         return
     try:
         val = int(message.text.strip())
@@ -1168,7 +1287,7 @@ async def admin_ch_add_input(message: Message, state: FSMContext):
         return
     if message.text.strip() in ("/cancel", "cancel", L("admin_cancel_btn", lang)):
         await state.clear()
-        await message.answer(L("admin_cancelled", lang))
+        await _send_admin_panel(message, lang)
         return
     text = message.text.strip()
     parts = text.split(None)
@@ -2234,8 +2353,6 @@ async def handle_message(message: Message):
 
     await track_chat(message)
     await update_user_activity(message.from_user.id)
-    if await _check_ban(message.from_user.id):
-        return
     if await _enforce_sub(message, message.from_user.id):
         return
     lang = await get_user_language(message.from_user.id)

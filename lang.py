@@ -323,6 +323,21 @@ _STRINGS = {
     "admin_banned":       {"ru": "Заблокирован",                "en": "Banned"},
     "admin_unbanned":     {"ru": "Разблокирован",               "en": "Unbanned"},
     "admin_already_banned": {"ru": "уже заблокирован",          "en": "already banned"},
+    "admin_edit_stats":   {"ru": "Изменить статистику",         "en": "Edit Stats"},
+    "admin_edit_field":   {"ru": "Что изменить?",               "en": "What to edit?"},
+    "admin_edit_reg_date":{"ru": "Дата регистрации",            "en": "Registration date"},
+    "admin_edit_msgs":    {"ru": "Сообщения",                   "en": "Messages"},
+    "admin_edit_imgs":    {"ru": "Картинки",                    "en": "Images"},
+    "admin_edit_voice":   {"ru": "Голосовые",                   "en": "Voice"},
+    "admin_edit_pdfs":    {"ru": "PDF",                         "en": "PDFs"},
+    "admin_enter_value":  {"ru": "Введите новое значение:",     "en": "Enter new value:"},
+    "admin_stat_updated": {"ru": "Статистика обновлена",        "en": "Stats updated"},
+    "admin_invalid_value":{"ru": "Неверное значение",           "en": "Invalid value"},
+
+    # ── Ban messages (user-facing) ──
+    "ban_title":          {"ru": "Доступ ограничен",            "en": "Access restricted"},
+    "ban_text":           {"ru": "Ваш аккаунт заблокирован.\n\nЕсли это ошибка, напишите в поддержку:\n@CodeGenix_support",
+                           "en": "Your account has been blocked.\n\nIf this is a mistake, contact support:\n@CodeGenix_support"},
 }
 
 

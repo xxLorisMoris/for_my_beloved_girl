@@ -386,6 +386,23 @@ async def set_history_limit(limit: int):
     await set_setting("history_limit", str(limit))
 
 
+async def update_user_field(user_id: int, field: str, value: str) -> bool:
+    allowed = {"first_use", "total_messages", "total_images", "total_voice", "total_pdfs"}
+    if field not in allowed:
+        return False
+    async with aiosqlite.connect(DB_PATH) as db:
+        if field == "first_use":
+            await db.execute("UPDATE users SET first_use = ? WHERE user_id = ?", (value, user_id))
+        else:
+            try:
+                int_val = int(value)
+            except ValueError:
+                return False
+            await db.execute(f"UPDATE users SET {field} = ? WHERE user_id = ?", (int_val, user_id))
+        await db.commit()
+    return True
+
+
 async def get_banned_users() -> list[int]:
     val = await get_setting("banned_users")
     try:
